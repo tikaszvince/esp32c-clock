@@ -2,6 +2,7 @@
 #include <time.h>
 #include <DIYables_TFT_Round.h>
 #include "config.h"  // Include your config file
+#include "icons.h"
 
 // TFT Display pins.
 #define PIN_RST 27  // The ESP32 pin GPIO27 connected to the RST pin of the circular TFT display
@@ -20,7 +21,11 @@
 // Create TFT display object
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 
-const unsigned long interval = 3UL*60UL*60UL*1000UL;
+// const unsigned long interval = 3UL*60UL*60UL*1000UL;
+//const unsigned long sec = 1000UL;
+//const unsigned long min = 60UL*1000UL;
+//const unsigned long hour = 60UL*60UL*1000UL;
+const unsigned long interval = 3UL*60UL*1000UL;
 unsigned long lastNtp = 0;
 
 // Display settings
@@ -34,6 +39,23 @@ unsigned long lastNtp = 0;
 #define HOUR_HAND_LENGTH   50
 #define MINUTE_HAND_LENGTH 70
 #define SECOND_HAND_LENGTH 85
+
+// Textbox
+const int TEXTBOX_WIDTH = 140;
+const int TEXTBOX_HEIGHT = 35;
+const int TEXTBOX_X = (SCREEN_WIDTH - TEXTBOX_WIDTH) / 2;
+const int TEXTBOX_Y = 160;
+// Icon
+const int ICON_WIDTH = 24;
+const int ICON_HEIGHT = 24;
+const int ICON_X = CENTER_X - (ICON_WIDTH / 2);
+const int ICON_Y = SCREEN_HEIGHT - (TEXTBOX_HEIGHT + TEXTBOX_Y);
+
+enum IconStatus {hide, flash, show};
+int iconStatusWifi = IconStatus::show;
+bool iconStateWifi = false;
+int iconStatusSync = IconStatus::hide;
+bool iconStateSync = true;
 
 void setup() {
   // Initialize serial communication
@@ -50,31 +72,24 @@ void setup() {
 
   // Draw initial clock face
   drawClockFace();
-
-  // Show "Connecting..." message
-  TFT_display.setTextColor(COLOR_YELLOW);
-  TFT_display.setTextSize(2);
-  TFT_display.setCursor(50, 110);
-  TFT_display.print("Connecting");
-  TFT_display.setCursor(60, 130);
-  TFT_display.print("WiFi...");
+  updateIcons();
 
   // Connect to WiFi
+  // Show "Connecting..." message
+  redrawTextBox("Wifi...");
+  updateIcons();
   connectToWiFi();
-
-  Serial.println("Clearing screen completely...");
-
-  // Clear the entire screen (not just a circle)
-  TFT_display.fillScreen(COLOR_BACKGROUND);
 
   Serial.println("Syncing time...");
 
   // Sync time with NTP server
+  redrawTextBox("NTP...");
   syncTimeWithNTP();
 
   Serial.println("Drawing fresh clock face...");
 
   // Draw clock face on clean screen
+  drawTextBox();
   updateClockDisplay();
 
   Serial.println("Setup complete! Starting clock updates...");
@@ -89,6 +104,7 @@ void loop() {
     lastUpdate = currentMillis;
     // Serial.println("Updating display...");
     updateClockDisplay();
+    updateIcons();
   }
   if (currentMillis - lastNtp >= interval) {
     syncTimeWithNTP();
@@ -96,6 +112,7 @@ void loop() {
 }
 
 void connectToWiFi() {
+  iconStatusWifi = IconStatus::flash;
   Serial.print("Connecting to WiFi: ");
   Serial.println(ssid);
 
@@ -107,6 +124,8 @@ void connectToWiFi() {
   while (WiFi.status() != WL_CONNECTED && attempts < 30) {
     delay(500);
     Serial.print(".");
+    iconStatusWifi = attempts % 2 == 0 ? IconStatus::hide : IconStatus::flash;
+    updateWifiIcon();
     attempts++;
   }
 
@@ -121,10 +140,12 @@ void connectToWiFi() {
     Serial.println("\nFailed to connect to WiFi!");
     Serial.println("Please check your credentials and try again.");
   }
+  iconStatusWifi = IconStatus::show;
 }
 
 void syncTimeWithNTP() {
   if (WiFi.status() == WL_CONNECTED) {
+    iconStatusSync = IconStatus::flash;
     Serial.println("\nSynchronizing time with NTP server...");
 
     // Configure time with NTP server using timezone string
@@ -136,6 +157,8 @@ void syncTimeWithNTP() {
     while (!getLocalTime(&timeinfo) && attempts < 10) {
       Serial.print(".");
       delay(1000);
+      iconStatusSync = attempts % 2 == 0 ? IconStatus::hide : IconStatus::flash;
+      updateSyncIcon();
       attempts++;
     }
 
@@ -148,8 +171,10 @@ void syncTimeWithNTP() {
       Serial.println("\nFailed to obtain time from NTP server!");
     }
   } else {
+    writeText("Sync error", true);
     Serial.println("Cannot sync time - WiFi not connected!");
   }
+  iconStatusSync = IconStatus::hide;
 }
 
 void drawClockFace() {
@@ -182,9 +207,32 @@ void drawClockFace() {
 
   // Draw center dot
   TFT_display.fillCircle(CENTER_X, CENTER_Y, 4, COLOR_CENTER_DOT);
+  drawTextBox();
+}
 
+void drawTextBox() {
   // Draw display box.
-  TFT_display.drawRect(40, 160, 160, 50, COLOR_CLOCKFACE);
+  TFT_display.fillRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_BACKGROUND);
+  TFT_display.drawRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_CLOCKFACE);
+}
+
+void redrawTextBox(const char str[]) {
+  drawTextBox();
+  writeText(str, false);
+}
+
+void writeText(const char str[], bool center) {
+  TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
+  TFT_display.setTextSize(2);
+
+  int x = TEXTBOX_X + 5;
+  if (center) {
+    int textWidth = strlen(str) * 12;  // Approximate width
+    x = (SCREEN_WIDTH - textWidth) / 2;
+  }
+
+  TFT_display.setCursor(x, 170);
+  TFT_display.print(str);
 }
 
 void updateClockDisplay() {
@@ -334,19 +382,61 @@ void drawSecondHand(int second, uint16_t color) {
 
 void displayDigitalTime(struct tm &timeinfo) {
   // Clear previous time display area
-  // TFT_display.fillRect(0, 200, 240, 40, COLOR_BACKGROUND);
 
   // Format time string
   char timeStr[16];
   sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
-  // Display time
-  TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
-  TFT_display.setTextSize(2);
-
-  // Center the text
-  int textWidth = strlen(timeStr) * 12;  // Approximate width
-  int x = (SCREEN_WIDTH - textWidth) / 2;
-  TFT_display.setCursor(x, 170);
-  TFT_display.print(timeStr);
+  writeText(timeStr, true);
 }
+
+// Icons.
+void updateIcons() {
+  updateWifiIcon();
+  updateSyncIcon();
+}
+
+void updateWifiIcon() {
+  bool visible = false;
+  bool okIcon = true;
+
+  if (iconStatusWifi == IconStatus::show) {
+    okIcon = WiFi.status() == WL_CONNECTED;
+    visible = true;
+  }
+  else if (iconStatusWifi == IconStatus::flash) {
+    visible = !iconStateWifi;
+    iconStateWifi = !iconStateWifi;
+    okIcon = true;
+  }
+  else {
+    visible = false;
+  }
+
+  drawIcon(visible, CENTER_X - 2 - ICON_WIDTH, okIcon ? IconWifiBitmap : IconWifiOffBitmap);
+}
+
+void updateSyncIcon() {
+  bool visible = false;
+  if (iconStatusSync == IconStatus::show) {
+    visible = true;
+  }
+  else if (iconStatusSync == IconStatus::flash) {
+    iconStateWifi = !iconStateSync;
+    visible = iconStateSync;
+  }
+  else {
+    visible = false;
+  }
+
+  drawIcon(visible, CENTER_X + 2, IconSyncBitmap);
+}
+
+void drawIcon(bool visible, int x, const uint16_t* icon) {
+  if (visible) {
+    TFT_display.drawRGBBitmap(x, ICON_Y, icon, ICON_WIDTH, ICON_HEIGHT);
+  }
+  else {
+    TFT_display.fillRect(x, ICON_Y, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
+  }
+}
+
