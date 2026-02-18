@@ -21,11 +21,12 @@
 // Create TFT display object
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 
-// const unsigned long interval = 3UL*60UL*60UL*1000UL;
-//const unsigned long sec = 1000UL;
-//const unsigned long min = 60UL*1000UL;
-//const unsigned long hour = 60UL*60UL*1000UL;
-const unsigned long interval = 3UL*60UL*1000UL;
+// 1 sec = 1000UL;
+// 1 min = 60UL*1000UL;
+// 1 hour = 60UL*60UL*1000UL;
+// 3 minutes = 3UL*60UL*1000UL;
+const unsigned long interval = 3UL*60UL*60UL*1000UL;
+
 unsigned long lastNtp = 0;
 
 // Display settings
