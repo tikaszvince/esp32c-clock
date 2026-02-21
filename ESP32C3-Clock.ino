@@ -1,8 +1,10 @@
 #include <WiFi.h>
 #include <time.h>
 #include <DIYables_TFT_Round.h>
-#include "config.h"  // Include your config file
 #include "icons.h"
+#include <math.h>
+#include <LittleFS.h>
+#include <ArduinoJson.h>  // Need to install this library
 
 // TFT Display pins.
 #define PIN_RST 27  // The ESP32 pin GPIO27 connected to the RST pin of the circular TFT display
@@ -17,6 +19,7 @@
 #define COLOR_SECOND_HAND DIYables_TFT::colorRGB(255, 0, 0)     // Red
 #define COLOR_CENTER_DOT  DIYables_TFT::colorRGB(255, 0, 0)     // Red
 #define COLOR_YELLOW      DIYables_TFT::colorRGB(255, 255, 0)   // Yellow
+#define COLOR_RED         DIYables_TFT::colorRGB(255, 0, 0)
 
 // Create TFT display object
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
@@ -27,6 +30,11 @@ DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 // 3 minutes = 3UL*60UL*1000UL;
 const unsigned long interval = 3UL*60UL*60UL*1000UL;
 
+// Configuration variables (loaded from JSON)
+String wifi_ssid = "";
+String wifi_password = "";
+String ntp_server = "pool.ntp.org";
+String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";
 unsigned long lastNtp = 0;
 
 // Display settings
@@ -75,6 +83,58 @@ void setup() {
   drawClockFace();
   updateIcons();
 
+  // Initialize LittleFS
+  if (!LittleFS.begin(true)) {  // true = format if mount fails
+    Serial.println("LittleFS mount failed!");
+    TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor(30, 110);
+    TFT_display.print("FS Error!");
+    while (1) delay(1000);
+  }
+
+  Serial.println("LittleFS mounted successfully!");
+  listFiles();
+
+  // Load config or create default
+  if (!loadConfig()) {
+    Serial.println("Creating default config...");
+    createDefaultConfig();
+
+    TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor(20, 90);
+    TFT_display.print("Config File");
+    TFT_display.setCursor(30, 110);
+    TFT_display.print("Created!");
+    TFT_display.setTextSize(1);
+    TFT_display.setCursor(10, 140);
+    TFT_display.print("Edit config.json");
+    TFT_display.setCursor(10, 155);
+    TFT_display.print("and restart");
+
+    Serial.println("\n=== IMPORTANT ===");
+    Serial.println("Edit config.json file with your WiFi credentials!");
+    Serial.println("Then restart the ESP32.");
+    Serial.println("=================\n");
+
+    while (1) delay(1000);  // Stop here
+  }
+
+  // Check if credentials are still default
+  if (wifi_ssid == "YOUR_WIFI_SSID") {
+    Serial.println("ERROR: Please edit config.json with your WiFi credentials!");
+
+    TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor(20, 100);
+    TFT_display.print("Edit");
+    TFT_display.setCursor(10, 120);
+    TFT_display.print("config.json");
+
+    while (1) delay(1000);
+  }
+
   // Connect to WiFi
   // Show "Connecting..." message
   redrawTextBox("Wifi...");
@@ -112,13 +172,183 @@ void loop() {
   }
 }
 
+// Create default config.json file
+void createDefaultConfig() {
+  Serial.println("Creating default config.json...");
+
+  File file = LittleFS.open("/config.json", "w");
+  if (!file) {
+    Serial.println("Failed to create config file!");
+    return;
+  }
+
+  // Create JSON document
+  JsonDocument doc;
+  doc["wifi_ssid"] = "YOUR_WIFI_SSID";
+  doc["wifi_password"] = "YOUR_WIFI_PASSWORD";
+  doc["ntp_server"] = "pool.ntp.org";
+  doc["timezone"] = "CET-1CEST,M3.5.0,M10.5.0/3";
+
+  // Write to file
+  if (serializeJson(doc, file) == 0) {
+    Serial.println("Failed to write to config file!");
+  } else {
+    Serial.println("Default config created successfully!");
+  }
+
+  file.close();
+}
+
+
+// Load configuration from JSON file
+bool loadConfig() {
+  Serial.println("Loading config.json...");
+
+  if (!LittleFS.exists("/config.json")) {
+    Serial.println("Config file not found!");
+    return false;
+  }
+
+  File file = LittleFS.open("/config.json", "r");
+  if (!file) {
+    Serial.println("Failed to open config file!");
+    return false;
+  }
+
+  // Parse JSON
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, file);
+  file.close();
+
+  if (error) {
+    Serial.println("\n!!! JSON SYNTAX ERROR !!!");
+    Serial.print("Parse error: ");
+    Serial.println(error.c_str());
+
+    // Show the actual file contents
+    file = LittleFS.open("/config.json", "r");
+    if (file) {
+      Serial.println("\n=== Current config.json contents ===");
+      while (file.available()) {
+        Serial.write(file.read());
+      }
+      file.close();
+      Serial.println("\n====================================\n");
+    }
+
+    Serial.println("The config.json file has invalid JSON syntax.");
+    Serial.println("Common issues:");
+    Serial.println("  - Missing comma between fields");
+    Serial.println("  - Missing quotes around strings");
+    Serial.println("  - Trailing comma after last field");
+    Serial.println("  - Unescaped special characters");
+    Serial.println("\nPlease fix config.json and restart.");
+
+    // Show error on display
+    TFT_display.fillScreen(COLOR_BACKGROUND);
+    TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor(30, 90);
+    TFT_display.print("JSON Error!");
+    TFT_display.setTextSize(1);
+    TFT_display.setCursor(10, 120);
+    TFT_display.print("Syntax error in");
+    TFT_display.setCursor(10, 135);
+    TFT_display.print("config.json");
+    TFT_display.setCursor(10, 155);
+    TFT_display.print("Check Serial Monitor");
+    TFT_display.setCursor(10, 170);
+    TFT_display.print("for details");
+
+    // Stop here - don't overwrite the file!
+    while (1) delay(1000);
+  }
+
+  // Load values
+  wifi_ssid = doc["wifi_ssid"].as<String>();
+  wifi_password = doc["wifi_password"].as<String>();
+  ntp_server = doc["ntp_server"] | "pool.ntp.org";
+  timezone = doc["timezone"] | "CET-1CEST,M3.5.0,M10.5.0/3";
+
+  // Validate required fields
+  if (wifi_ssid.isEmpty()) {
+    Serial.println("\n!!! VALIDATION ERROR !!!");
+    Serial.println("Missing 'wifi_ssid' field in config.json");
+
+    TFT_display.fillScreen(COLOR_BACKGROUND);
+    TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor(20, 100);
+    TFT_display.print("Missing SSID");
+    TFT_display.setTextSize(1);
+    TFT_display.setCursor(10, 130);
+    TFT_display.print("in config.json");
+
+    while (1) delay(1000);
+  }
+
+  if (wifi_password.isEmpty()) {
+    Serial.println("\n!!! VALIDATION ERROR !!!");
+    Serial.println("Missing 'wifi_password' field in config.json");
+
+    TFT_display.fillScreen(COLOR_BACKGROUND);
+    TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor(10, 100);
+    TFT_display.print("Missing PWD");
+    TFT_display.setTextSize(1);
+    TFT_display.setCursor(10, 130);
+    TFT_display.print("in config.json");
+
+    while (1) delay(1000);
+  }
+
+  Serial.println("Config loaded successfully!");
+  Serial.println("SSID: " + wifi_ssid);
+  Serial.println("NTP Server: " + ntp_server);
+  Serial.println("Timezone: " + timezone);
+
+  return true;
+}
+
+// List all files in LittleFS (for debugging)
+void listFiles() {
+  Serial.println("\n=== Files in LittleFS ===");
+  File root = LittleFS.open("/");
+  File file = root.openNextFile();
+
+  while (file) {
+    Serial.print("  ");
+    Serial.print(file.name());
+    Serial.print(" (");
+    Serial.print(file.size());
+    Serial.println(" bytes)");
+    file = root.openNextFile();
+  }
+  Serial.println("========================\n");
+}
+
+// Show contents of config.json (for debugging)
+void showConfigFile() {
+  Serial.println("\n=== config.json contents ===");
+  File file = LittleFS.open("/config.json", "r");
+  if (file) {
+    while (file.available()) {
+      Serial.write(file.read());
+    }
+    file.close();
+    Serial.println("\n============================\n");
+  } else {
+    Serial.println("Could not open config.json");
+  }
+}
+
 void connectToWiFi() {
   iconStatusWifi = IconStatus::flash;
   Serial.print("Connecting to WiFi: ");
-  Serial.println(ssid);
-
+  Serial.println(wifi_ssid);
   // Start WiFi connection
-  WiFi.begin(ssid, password);
+  WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
 
   // Wait for connection
   int attempts = 0;
@@ -150,7 +380,7 @@ void syncTimeWithNTP() {
     Serial.println("\nSynchronizing time with NTP server...");
 
     // Configure time with NTP server using timezone string
-    configTzTime(timeZone, ntpServer);
+    configTzTime(timezone.c_str(), ntp_server.c_str());
 
     // Wait for time to be set
     struct tm timeinfo;
@@ -166,7 +396,7 @@ void syncTimeWithNTP() {
     if (getLocalTime(&timeinfo)) {
       Serial.println("\nTime synchronized successfully!");
       Serial.print("Timezone: ");
-      Serial.println(timeZone);
+      Serial.println(timezone.c_str());
       lastNtp = millis();
     } else {
       Serial.println("\nFailed to obtain time from NTP server!");
@@ -440,4 +670,3 @@ void drawIcon(bool visible, int x, const uint16_t* icon) {
     TFT_display.fillRect(x, ICON_Y, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
   }
 }
-
