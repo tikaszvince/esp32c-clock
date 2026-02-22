@@ -6,15 +6,12 @@
 
 #include "icons.h"
 #include "config.h"  // WiFiManager configuration
+#include "button.h"  // WiFiManager configuration
 
 // TFT Display pins.
 #define PIN_RST 27  // The ESP32 pin GPIO27 connected to the RST pin of the circular TFT display
 #define PIN_DC  25  // The ESP32 pin GPIO25 connected to the DC pin of the circular TFT display
 #define PIN_CS  26  // The ESP32 pin GPIO26 connected to the CS pin of the circular TFT display
-
-#define BOOT_BUTTON_PIN 0 // GPIO0 pin, the BOOT button.
-#define SHORT_PRESS_TIME 500 // 500 milliseconds
-#define LONG_PRESS_TIME  5000 // 5 seconds
 
 // Colors
 #define COLOR_BACKGROUND  DIYables_TFT::colorRGB(0, 0, 0)       // Black
@@ -77,10 +74,6 @@ bool iconStateSync = true;
 //unsigned long pressedTimeBoot = 0;
 //unsigned long releasedTimeBoot = 0;
 //bool isPressingBoot = false;
-
-
-// Setup a new OneButton on pin PIN_INPUT2.
-OneButton buttonBoot(BOOT_BUTTON_PIN, true);
 
 void setup() {
   // Initialize serial communication
@@ -145,7 +138,6 @@ void loop() {
   if (currentMillis - lastNtp >= interval) {
     syncTimeWithNTP();
   }
-
   buttonLoop();
 }
 
@@ -345,35 +337,4 @@ void drawIcon(bool visible, int x, const uint16_t* icon) {
   else {
     TFT_display.fillRect(x, ICON_Y, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
   }
-}
-
-// Buttons
-void buttonSetup() {
-  buttonBoot.setLongPressIntervalMs(5000);
-  // link the boot button functions.
-  buttonBoot.attachClick(bootButtonClick);
-  buttonBoot.attachDoubleClick(bootButtonDoubleClick);
-  buttonBoot.attachLongPressStart(bootButtonLongPressStart);
-  buttonBoot.attachLongPressStop(bootButtonLongPressStop);
-}
-
-void buttonLoop() {
-  // keep watching the push buttons:
-  buttonBoot.tick();
-}
-
-void bootButtonClick() {
-  Serial.println("Boot button click.");
-}
-
-void bootButtonDoubleClick() {
-  Serial.println("Button 2button doubleclick.");
-}
-
-void bootButtonLongPressStart() {
-  Serial.println("Boot button longPress start");
-}
-
-void bootButtonLongPressStop() {
-  Serial.println("Boot button longPress stop");
 }
