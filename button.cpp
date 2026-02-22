@@ -3,11 +3,18 @@
 #include "config.h"
 #include <OneButton.h>
 
-#define BOOT_BUTTON_PIN 0 // GPIO0 pin, the BOOT button.
-#define SHORT_PRESS_TIME 500 // 500 milliseconds
-#define LONG_PRESS_TIME  5000 // 5 seconds
+#define BOOT_BUTTON_PIN  0       // GPIO0 pin, the BOOT button.
+#define SHORT_PRESS_TIME 500     // 500 milliseconds
+#define LONG_PRESS_TIME  5000    // 5 seconds
+#define RESET_TIMEOUT_MS 30000UL // 30 seconds
 
 static OneButton buttonBoot(BOOT_BUTTON_PIN, true);
+static ButtonMode currentMode = NORMAL;
+static unsigned long resetPendingStart = 0;
+
+ButtonMode getButtonMode() {
+  return currentMode;
+}
 
 static void bootButtonClick() {
   Serial.println("Boot button click.");
@@ -23,6 +30,9 @@ static void bootButtonLongPressStart() {
 
 static void bootButtonLongPressStop() {
   Serial.println("Boot button longPress stop");
+  currentMode = RESET_PENDING;
+  resetPendingStart = millis();
+  Serial.println("Reset pending — waiting for confirmation...");
 }
 
 void buttonSetup() {
@@ -35,4 +45,12 @@ void buttonSetup() {
 
 void buttonLoop() {
   buttonBoot.tick();
+
+  // Check for reset confirmation timeout
+  if (currentMode == RESET_PENDING) {
+    if (millis() - resetPendingStart >= RESET_TIMEOUT_MS) {
+      Serial.println("Reset confirmation timed out. Returning to normal.");
+      currentMode = NORMAL;
+    }
+  }
 }
