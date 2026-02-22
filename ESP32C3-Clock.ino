@@ -90,25 +90,40 @@ void setup() {
   TFT_display.setRotation(0);
   TFT_display.fillScreen(COLOR_BACKGROUND);
 
-  // Draw initial clock face
-  drawClockFace();
-  updateIcons();
+  // Show WiFi setup instructions
+  if (!loadConfig()) {
+    displayWifiSetupInstructions();
+  }
+  else {
+    // Draw initial clock face
+    drawClockFace();
+    updateIcons();
 
-  // Show WiFi setup message
-  redrawTextBox("WiFi Setup");
-  iconStatusWifi = IconStatus::flash;
-  updateIcons();
+    // Show WiFi setup message
+    redrawTextBox("WiFi Setup");
+
+    iconStatusWifi = IconStatus::flash;
+    updateIcons();
+  }
 
   // Initialize WiFi configuration (web portal)
-  if (!initConfig()) {
-    // Failed to connect
-    redrawTextBox("WiFi Failed");
+  if (!connectWifi()) {
+    TFT_display.fillScreen(COLOR_BACKGROUND);
+    TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+    TFT_display.setTextSize(2);
+    TFT_display.setCursor((SCREEN_WIDTH - (strlen("WiFi Failed") * 12)) / 2, CENTER_Y - 20);
+    TFT_display.print("WiFi Failed");
+    TFT_display.setTextSize(1);
+    TFT_display.setCursor((SCREEN_WIDTH - (strlen("Restarting...") * 6)) / 2, CENTER_Y + 15);
+    TFT_display.print("Restarting...");
     iconStatusWifi = IconStatus::show;
     updateIcons();
-    delay(3000);
+    delay(30000UL);
     ESP.restart();
   }
 
+  // Draw initial clock face
+  drawClockFace();
   iconStatusWifi = IconStatus::show;
   updateIcons();
 
@@ -254,7 +269,8 @@ void drawClockFace() {
       TFT_display.drawLine(x1, y1, x2, y2, COLOR_CLOCKFACE);
       TFT_display.drawLine(x1 + 1, y1, x2 + 1, y2, COLOR_CLOCKFACE);
       TFT_display.drawLine(x1, y1 + 1, x2, y2 + 1, COLOR_CLOCKFACE);
-    } else {
+    }
+    else {
       TFT_display.drawLine(x1, y1, x2, y2, COLOR_CLOCKFACE);
     }
     yield();  // Prevent watchdog
@@ -294,6 +310,30 @@ void displayResetQuestion() {
   TFT_display.setCursor((SCREEN_WIDTH - (strlen(str3) * 12)) / 2, CENTER_Y + 12);
   TFT_display.print(str3);
   TFT_display.setCursor((SCREEN_WIDTH - (strlen(str4) * 12)) / 2, CENTER_Y + 40);
+  TFT_display.print(str4);
+}
+
+void displayWifiSetupInstructions() {
+  TFT_display.fillScreen(COLOR_BACKGROUND);
+  TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
+
+  static char str1[] = "Connect to";
+  static char str2[] = "WiFi hotspot:";
+  static char str3[] = "SSID: ESP32-Clock";
+  static char str4[] = "PW: clocksetup";
+
+  TFT_display.setTextSize(2);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str1) * 12)) / 2, CENTER_Y - 60);
+  TFT_display.print(str1);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str2) * 12)) / 2, CENTER_Y - 35);
+  TFT_display.print(str2);
+
+  TFT_display.setTextColor(COLOR_CLOCKFACE, COLOR_BACKGROUND);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str3) * 12)) / 2, CENTER_Y);
+  TFT_display.print(str3);
+
+  TFT_display.setTextSize(1);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str4) * 6)) / 2, CENTER_Y + 25);
   TFT_display.print(str4);
 }
 

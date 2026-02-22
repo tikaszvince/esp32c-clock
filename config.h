@@ -7,9 +7,11 @@
 // Exposed config getters
 String getTimezone();
 String getNTPServer();
+bool hasStoredWifiCredentials();
 
 // Lifecycle
-bool initConfig();
+bool loadConfig();   // returns true if WiFi was previously configured
+bool connectWifi();  // returns true if WiFi connected successfully
 void resetConfig();
 
 #endif

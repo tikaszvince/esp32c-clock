@@ -14,25 +14,35 @@ static void saveConfigCallback() {
   shouldSaveConfig = true;
 }
 
-bool initConfig() {
-  Serial.println("Initializing configuration...");
-
+bool loadConfig() {
   preferences.begin("clock-config", true);
   String saved_tz  = preferences.getString("timezone",   "CET-1CEST,M3.5.0,M10.5.0/3");
   String saved_ntp = preferences.getString("ntp_server", "pool.ntp.org");
+  bool wifiConfigured = preferences.getBool("wifi_configured", false);
   preferences.end();
 
   strcpy(timezone_buffer,   saved_tz.c_str());
   strcpy(ntp_server_buffer, saved_ntp.c_str());
 
-  Serial.print("Loaded timezone: ");   Serial.println(timezone_buffer);
-  Serial.print("Loaded NTP server: "); Serial.println(ntp_server_buffer);
+  timezone   = saved_tz;
+  ntp_server = saved_ntp;
 
+  Serial.print("Loaded timezone: ");
+  Serial.println(timezone_buffer);
+  Serial.print("Loaded NTP server: ");
+  Serial.println(ntp_server_buffer);
+  Serial.print("WiFi previously configured: ");
+  Serial.println(wifiConfigured);
+
+  return wifiConfigured;
+}
+
+bool connectWifi() {
   WiFiManager wm;
   shouldSaveConfig = false;
 
   WiFiManagerParameter custom_timezone(  "timezone",   "Timezone (POSIX format)", timezone_buffer,   100);
-  WiFiManagerParameter custom_ntp_server("ntp_server", "NTP Server",              ntp_server_buffer,  50);
+  WiFiManagerParameter custom_ntp_server("ntp_server", "NTP Server",              ntp_server_buffer, 50);
 
   wm.addParameter(&custom_timezone);
   wm.addParameter(&custom_ntp_server);
@@ -52,16 +62,16 @@ bool initConfig() {
     strcpy(timezone_buffer,   custom_timezone.getValue());
     strcpy(ntp_server_buffer, custom_ntp_server.getValue());
 
-    preferences.begin("clock-config", false);
-    preferences.putString("timezone",   timezone_buffer);
-    preferences.putString("ntp_server", ntp_server_buffer);
-    preferences.end();
-
-    Serial.println("Configuration saved!");
+    timezone   = String(timezone_buffer);
+    ntp_server = String(ntp_server_buffer);
   }
 
-  timezone   = String(timezone_buffer);
-  ntp_server = String(ntp_server_buffer);
+  // Save everything including the wifi_configured flag
+  preferences.begin("clock-config", false);
+  preferences.putString("timezone",       timezone_buffer);
+  preferences.putString("ntp_server",     ntp_server_buffer);
+  preferences.putBool("wifi_configured",  true);
+  preferences.end();
 
   Serial.println("\nWiFi connected!");
   Serial.print("IP Address: "); Serial.println(WiFi.localIP());
