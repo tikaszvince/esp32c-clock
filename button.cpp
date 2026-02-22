@@ -1,9 +1,9 @@
 #include "Arduino.h"
 #include "button.h"
 #include "config.h"
+#include "pins.h"
 #include <OneButton.h>
 
-#define BOOT_BUTTON_PIN  0       // GPIO0 pin, the BOOT button.
 #define SHORT_PRESS_TIME 500     // 500 milliseconds
 #define LONG_PRESS_TIME  5000    // 5 seconds
 #define RESET_TIMEOUT_MS 30000UL // 30 seconds
