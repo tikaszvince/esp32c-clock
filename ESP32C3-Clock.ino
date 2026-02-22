@@ -2,6 +2,7 @@
 #include <OneButton.h>
 
 #include "icons.h"
+#include "states.h"
 #include "config.h"
 #include "button.h"
 #include "pins.h"
@@ -36,7 +37,7 @@ void setup() {
     // Show WiFi setup message
     redrawTextBox("WiFi Setup");
 
-    iconStatusWifi = IconStatus::flash;
+    setWifiState(WIFI_CONNECTING);
     updateIcons();
   }
 
@@ -50,7 +51,7 @@ void setup() {
     TFT_display.setTextSize(1);
     TFT_display.setCursor((SCREEN_WIDTH - (strlen("Restarting...") * 6)) / 2, CENTER_Y + 15);
     TFT_display.print("Restarting...");
-    iconStatusWifi = IconStatus::show;
+    setWifiState(WIFI_DISCONNECTED);
     updateIcons();
     delay(30000UL);
     ESP.restart();
@@ -58,7 +59,7 @@ void setup() {
 
   // Draw initial clock face
   drawClockFace();
-  iconStatusWifi = IconStatus::show;
+  setWifiState(WIFI_CONNECTED);
   updateIcons();
 
   // Sync time with NTP server
@@ -73,6 +74,9 @@ void setup() {
 }
 
 void loop() {
+  setWifiState(getWifiState());
+  setNtpState(getNtpState());
+
   // Update clock display every second
   static unsigned long lastUpdate = 0;
   static ButtonMode lastMode = NORMAL;
@@ -88,8 +92,6 @@ void loop() {
     }
     else if (mode == NORMAL) {
       drawClockFace();
-      iconStatusSync = (getNtpStatus() == NTP_SYNCING) ? IconStatus::flash : IconStatus::hide;
-      updateIcons();
     }
     lastMode = mode;
   }
@@ -99,14 +101,14 @@ void loop() {
       lastUpdate = currentMillis;
       // Serial.println("Updating display...");
       updateClockDisplay();
-      iconStatusSync = (getNtpStatus() == NTP_SYNCING) ? IconStatus::flash : IconStatus::hide;
-      updateIcons();
     }
 
     if (currentMillis - lastNtp >= NTP_SYNC_INTERVAL) {
       syncTimeWithNTP([](const char* msg){ writeText(msg, true); });
     }
-  }
 
+    setNtpState(getNtpState() == NTP_SYNCING ? NTP_SYNCING : NTP_IDLE);
+    updateIcons();
+  }
   buttonLoop();
 }

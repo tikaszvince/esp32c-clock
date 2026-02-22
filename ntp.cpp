@@ -3,18 +3,16 @@
 #include "config.h"
 #include <WiFi.h>
 #include <time.h>
+#include "states.h"
 
 const unsigned long NTP_SYNC_INTERVAL = 3UL * 60UL * 60UL * 1000UL;
 unsigned long lastNtp = 0;
 
-static NtpStatus currentNtpStatus = NTP_IDLE;
-
-NtpStatus getNtpStatus() {
-  return currentNtpStatus;
-}
+static NtpState currentNtpState = NTP_IDLE;
+NtpState getNtpState() { return currentNtpState; }
 
 void syncTimeWithNTP(void (*onStatus)(const char*)) {
-  currentNtpStatus = NTP_SYNCING;
+  currentNtpState = NTP_SYNCING;
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nSynchronizing time with NTP server...");
@@ -80,5 +78,5 @@ void syncTimeWithNTP(void (*onStatus)(const char*)) {
     Serial.println("Cannot sync - WiFi not connected!");
   }
 
-  currentNtpStatus = NTP_IDLE;
+  currentNtpState = NTP_IDLE;
 }

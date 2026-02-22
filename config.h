@@ -3,6 +3,7 @@
 
 #include <WiFiManager.h>
 #include <Preferences.h>
+#include "states.h"
 
 extern const char* WIFI_HOTSPOT_SSID;
 extern const char* WIFI_HOTSPOT_PASSWORD;
@@ -10,7 +11,7 @@ extern const char* WIFI_HOTSPOT_PASSWORD;
 // Exposed config getters
 String getTimezone();
 String getNTPServer();
-bool hasStoredWifiCredentials();
+WifiState getWifiState();
 
 // Lifecycle
 bool loadConfig();   // returns true if WiFi was previously configured

@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "config.h"
+#include "states.h"
 
 static String ntp_server = "pool.ntp.org";
 static String timezone   = "CET-1CEST,M3.5.0,M10.5.0/3";
@@ -11,11 +12,14 @@ static Preferences preferences;
 static char timezone_buffer[100];
 static char ntp_server_buffer[50];
 static bool shouldSaveConfig = false;
+static WifiState currentWifiState = WIFI_DISCONNECTED;
 
 static void saveConfigCallback() {
   Serial.println("Should save config");
   shouldSaveConfig = true;
 }
+
+WifiState getWifiState() { return currentWifiState; }
 
 bool loadConfig() {
   preferences.begin("clock-config", true);
@@ -41,6 +45,7 @@ bool loadConfig() {
 }
 
 bool connectWifi() {
+  currentWifiState = WIFI_CONNECTING;
   WiFiManager wm;
   shouldSaveConfig = false;
 
@@ -57,6 +62,7 @@ bool connectWifi() {
 
   if (!connected) {
     Serial.println("Failed to connect to WiFi");
+    currentWifiState = WIFI_DISCONNECTED;
     return false;
   }
 
@@ -80,6 +86,7 @@ bool connectWifi() {
   Serial.print("IP Address: "); Serial.println(WiFi.localIP());
   Serial.print("Signal Strength: "); Serial.print(WiFi.RSSI()); Serial.println(" dBm");
 
+  currentWifiState = WIFI_CONNECTED;
   return true;
 }
 

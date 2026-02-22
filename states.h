@@ -1,0 +1,7 @@
+#ifndef STATES_H
+#define STATES_H
+
+enum WifiState { WIFI_DISCONNECTED, WIFI_CONNECTING, WIFI_CONNECTED };
+enum NtpState  { NTP_IDLE, NTP_SYNCING };
+
+#endif

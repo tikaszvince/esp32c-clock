@@ -10,10 +10,10 @@
 
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 
-int  iconStatusWifi = IconStatus::show;
-bool iconStateWifi  = false;
-int  iconStatusSync = IconStatus::hide;
-bool iconStateSync  = true;
+static WifiState currentWifiState = WIFI_DISCONNECTED;
+static NtpState  currentNtpState  = NTP_IDLE;
+static bool      blinkState       = false;
+static unsigned long lastBlink    = 0;
 
 void drawClockFace() {
   // Reset screen.
@@ -142,26 +142,37 @@ void displayWifiSetupInstructions() {
 }
 
 // Icons.
+void setWifiState(WifiState state) { currentWifiState = state; }
+void setNtpState(NtpState state)   { currentNtpState  = state; }
+
 void updateIcons() {
+  unsigned long now = millis();
+  if (now - lastBlink >= BLINK_INTERVAL_MS) {
+    blinkState = !blinkState;
+    lastBlink  = now;
+  }
+
   updateWifiIcon();
   updateSyncIcon();
 }
 
 void updateWifiIcon() {
   bool visible = false;
-  bool okIcon = true;
+  bool okIcon  = true;
 
-  if (iconStatusWifi == IconStatus::show) {
-    okIcon = WiFi.status() == WL_CONNECTED;
-    visible = true;
-  }
-  else if (iconStatusWifi == IconStatus::flash) {
-    visible = !iconStateWifi;
-    iconStateWifi = !iconStateWifi;
-    okIcon = true;
-  }
-  else {
-    visible = false;
+  switch (currentWifiState) {
+    case WIFI_CONNECTED:
+      visible = true;
+      okIcon  = true;
+      break;
+    case WIFI_CONNECTING:
+      visible = blinkState;
+      okIcon  = true;
+      break;
+    case WIFI_DISCONNECTED:
+      visible = true;
+      okIcon  = false;
+      break;
   }
 
   drawIcon(visible, CENTER_X - 2 - ICON_WIDTH, okIcon ? IconWifiBitmap : IconWifiOffBitmap);
@@ -169,15 +180,14 @@ void updateWifiIcon() {
 
 void updateSyncIcon() {
   bool visible = false;
-  if (iconStatusSync == IconStatus::show) {
-    visible = true;
-  }
-  else if (iconStatusSync == IconStatus::flash) {
-    iconStateSync = !iconStateSync;
-    visible = iconStateSync;
-  }
-  else {
-    visible = false;
+
+  switch (currentNtpState) {
+    case NTP_SYNCING:
+      visible = blinkState;
+      break;
+    case NTP_IDLE:
+      visible = false;
+      break;
   }
 
   drawIcon(visible, CENTER_X + 2, IconSyncBitmap);

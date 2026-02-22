@@ -3,6 +3,7 @@
 
 #include <DIYables_TFT_Round.h>
 #include "display_constants.h"
+#include "states.h"
 
 // Colors
 #define COLOR_BACKGROUND  DIYables_TFT::colorRGB(0, 0, 0)       // Black
@@ -14,13 +15,6 @@
 #define COLOR_YELLOW      DIYables_TFT::colorRGB(255, 255, 0)   // Yellow
 #define COLOR_RED         DIYables_TFT::colorRGB(255, 0, 0)
 
-enum IconStatus { hide, flash, show };
-
-extern int  iconStatusWifi;
-extern bool iconStateWifi;
-extern int  iconStatusSync;
-extern bool iconStateSync;
-
 extern DIYables_TFT_GC9A01_Round TFT_display;
 
 void drawClockFace();
@@ -31,6 +25,10 @@ void displayDigitalTime(struct tm &timeinfo);
 void updateClockDisplay();
 void displayResetQuestion();
 void displayWifiSetupInstructions();
+
+void setWifiState(WifiState state);
+void setNtpState(NtpState state);
+
 void updateIcons();
 void updateWifiIcon();
 void updateSyncIcon();
