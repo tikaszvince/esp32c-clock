@@ -4,6 +4,9 @@
 static String ntp_server = "pool.ntp.org";
 static String timezone   = "CET-1CEST,M3.5.0,M10.5.0/3";
 
+const char* WIFI_HOTSPOT_SSID     = "ESP32-Clock";
+const char* WIFI_HOTSPOT_PASSWORD = "clocksetup";
+
 static Preferences preferences;
 static char timezone_buffer[100];
 static char ntp_server_buffer[50];
@@ -50,7 +53,7 @@ bool connectWifi() {
   wm.setConfigPortalTimeout(180);
 
   Serial.println("Calling autoConnect...");
-  bool connected = wm.autoConnect("ESP32-Clock", "clocksetup");
+  bool connected = wm.autoConnect(WIFI_HOTSPOT_SSID, WIFI_HOTSPOT_PASSWORD);
 
   if (!connected) {
     Serial.println("Failed to connect to WiFi");

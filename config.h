@@ -4,6 +4,9 @@
 #include <WiFiManager.h>
 #include <Preferences.h>
 
+extern const char* WIFI_HOTSPOT_SSID;
+extern const char* WIFI_HOTSPOT_PASSWORD;
+
 // Exposed config getters
 String getTimezone();
 String getNTPServer();

@@ -319,8 +319,10 @@ void displayWifiSetupInstructions() {
 
   static char str1[] = "Connect to";
   static char str2[] = "WiFi hotspot:";
-  static char str3[] = "SSID: ESP32-Clock";
-  static char str4[] = "PW: clocksetup";
+  char ssidLine[40];
+  char pwLine[40];
+  snprintf(ssidLine, sizeof(ssidLine), "SSID: %s", WIFI_HOTSPOT_SSID);
+  snprintf(pwLine,   sizeof(pwLine),   "PW: %s",   WIFI_HOTSPOT_PASSWORD);
 
   TFT_display.setTextSize(2);
   TFT_display.setCursor((SCREEN_WIDTH - (strlen(str1) * 12)) / 2, CENTER_Y - 60);
@@ -329,12 +331,10 @@ void displayWifiSetupInstructions() {
   TFT_display.print(str2);
 
   TFT_display.setTextColor(COLOR_CLOCKFACE, COLOR_BACKGROUND);
-  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str3) * 12)) / 2, CENTER_Y);
-  TFT_display.print(str3);
-
-  TFT_display.setTextSize(1);
-  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str4) * 6)) / 2, CENTER_Y + 25);
-  TFT_display.print(str4);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(ssidLine) * 12)) / 2, CENTER_Y);
+  TFT_display.print(ssidLine);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(pwLine) * 12)) / 2, CENTER_Y + 25);
+  TFT_display.print(pwLine);
 }
 
 void writeText(const char str[], bool center) {
