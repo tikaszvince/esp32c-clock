@@ -1,10 +1,9 @@
 #include "Arduino.h"
-#include "button.h"
-#include "config.h"
-#include "pins.h"
 #include <OneButton.h>
+#include "button.h"
+#include "pins.h"
 
-#define SHORT_PRESS_TIME 500     // 500 milliseconds
+#define SHORT_PRESS_TIME 400     // 400 milliseconds
 #define LONG_PRESS_TIME  5000    // 5 seconds
 #define RESET_TIMEOUT_MS 30000UL // 30 seconds
 
@@ -12,12 +11,11 @@ static OneButton buttonBoot(BOOT_BUTTON_PIN, true);
 static ButtonMode currentMode = NORMAL;
 static unsigned long resetPendingStart = 0;
 
+static void (*_onDoubleClick)()  = nullptr;
+static void (*_onLongPressStop)() = nullptr;
+
 ButtonMode getButtonMode() {
   return currentMode;
-}
-
-static void bootButtonClick() {
-  Serial.println("Boot button click.");
 }
 
 static void bootButtonDoubleClick() {
@@ -25,12 +23,10 @@ static void bootButtonDoubleClick() {
 
   if (currentMode == RESET_PENDING) {
     Serial.println("Reset confirmed! Calling resetConfig...");
-    resetConfig();
+    if (_onDoubleClick) {
+      _onDoubleClick();
+    }
   }
-}
-
-static void bootButtonLongPressStart() {
-  Serial.println("Boot button longPress start");
 }
 
 static void bootButtonLongPressStop() {
@@ -38,13 +34,20 @@ static void bootButtonLongPressStop() {
   currentMode = RESET_PENDING;
   resetPendingStart = millis();
   Serial.println("Reset pending — waiting for confirmation...");
+  if (_onLongPressStop) {
+    _onLongPressStop();
+  }
 }
 
-void buttonSetup() {
-  buttonBoot.setLongPressIntervalMs(LONG_PRESS_TIME);
-  buttonBoot.attachClick(bootButtonClick);
+void buttonSetup(
+  void (*onDoubleClick)(),
+  void (*onLongPressStop)()
+) {
+  _onDoubleClick  = onDoubleClick;
+  _onLongPressStop = onLongPressStop;
+
+  //buttonBoot.setLongPressIntervalMs(LONG_PRESS_TIME);
   buttonBoot.attachDoubleClick(bootButtonDoubleClick);
-  buttonBoot.attachLongPressStart(bootButtonLongPressStart);
   buttonBoot.attachLongPressStop(bootButtonLongPressStop);
 }
 

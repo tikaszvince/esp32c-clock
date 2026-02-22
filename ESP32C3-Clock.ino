@@ -15,7 +15,10 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
 
-  buttonSetup();
+  buttonSetup(
+    []() { resetConfig(); },
+    []() { /* long press stop — nothing extra needed */ }
+  );
 
   Serial.println("\n\nESP32 WiFi Clock");
   Serial.println("=================");

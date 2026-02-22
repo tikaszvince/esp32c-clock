@@ -4,7 +4,10 @@
 enum ButtonMode { NORMAL, RESET_PENDING };
 
 ButtonMode getButtonMode();
-void buttonSetup();
+void buttonSetup(
+  void (*onDoubleClick)(),
+  void (*onLongPressStop)()
+);
 void buttonLoop();
 
 #endif
