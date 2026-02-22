@@ -22,6 +22,11 @@ static void bootButtonClick() {
 
 static void bootButtonDoubleClick() {
   Serial.println("Boot button double click.");
+
+  if (currentMode == RESET_PENDING) {
+    Serial.println("Reset confirmed! Calling resetConfig...");
+    resetConfig();
+  }
 }
 
 static void bootButtonLongPressStart() {

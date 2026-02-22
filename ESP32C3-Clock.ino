@@ -126,18 +126,37 @@ void setup() {
 void loop() {
   // Update clock display every second
   static unsigned long lastUpdate = 0;
+  static ButtonMode lastMode = NORMAL;
   unsigned long currentMillis = millis();
 
-  if (currentMillis - lastUpdate >= 1000) {
-    lastUpdate = currentMillis;
-    // Serial.println("Updating display...");
-    updateClockDisplay();
-    updateIcons();
+  ButtonMode mode = getButtonMode();
+
+  // React to mode changes
+  if (mode != lastMode) {
+    if (mode == RESET_PENDING) {
+      TFT_display.fillScreen(COLOR_BACKGROUND);
+      displayResetQuestion();
+    }
+    else if (mode == NORMAL) {
+      drawClockFace();
+      updateIcons();
+    }
+    lastMode = mode;
   }
 
-  if (currentMillis - lastNtp >= interval) {
-    syncTimeWithNTP();
+  if (mode == NORMAL) {
+    if (currentMillis - lastUpdate >= 1000) {
+      lastUpdate = currentMillis;
+      // Serial.println("Updating display...");
+      updateClockDisplay();
+      updateIcons();
+    }
+
+    if (currentMillis - lastNtp >= interval) {
+      syncTimeWithNTP();
+    }
   }
+
   buttonLoop();
 }
 
@@ -201,7 +220,8 @@ void syncTimeWithNTP() {
       writeText("Sync failed", true);
       Serial.println("Failed with all NTP servers!");
     }
-  } else {
+  }
+  else {
     writeText("No WiFi", true);
     Serial.println("Cannot sync - WiFi not connected!");
   }
@@ -210,6 +230,8 @@ void syncTimeWithNTP() {
 }
 
 void drawClockFace() {
+  // Reset screen.
+  TFT_display.fillScreen(COLOR_BACKGROUND);
   // Draw outer circle
   TFT_display.drawCircle(CENTER_X, CENTER_Y, CLOCK_RADIUS, COLOR_CLOCKFACE);
   TFT_display.drawCircle(CENTER_X, CENTER_Y, CLOCK_RADIUS - 1, COLOR_CLOCKFACE);
@@ -252,6 +274,27 @@ void drawTextBox() {
 void redrawTextBox(const char str[]) {
   drawTextBox();
   writeText(str, false);
+}
+
+void displayResetQuestion() {
+  TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
+  TFT_display.setTextSize(3);
+
+  static char str1[] = "Reset";
+  static char str2[] = "config?";
+  static char str3[] = "Double click";
+  static char str4[] = "to confirm";
+
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str1) * 18)) / 2, CENTER_Y - 60);
+  TFT_display.print(str1);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str2) * 18)) / 2, CENTER_Y - 30);
+  TFT_display.print(str2);
+
+  TFT_display.setTextSize(2);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str3) * 12)) / 2, CENTER_Y + 12);
+  TFT_display.print(str3);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str4) * 12)) / 2, CENTER_Y + 40);
+  TFT_display.print(str4);
 }
 
 void writeText(const char str[], bool center) {
