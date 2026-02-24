@@ -10,6 +10,7 @@
 static OneButton buttonBoot(BOOT_BUTTON_PIN, true);
 static unsigned long resetPendingStart = 0;
 
+static void (*_onResetConfirm)() = nullptr;
 static void (*_onDoubleClick)() = nullptr;
 
 static void bootButtonDoubleClick() {
@@ -17,6 +18,12 @@ static void bootButtonDoubleClick() {
 
   if (getAppState() == RESET_PENDING) {
     Serial.println("Reset confirmed! Calling resetConfig...");
+    if (_onResetConfirm) {
+      _onResetConfirm();
+    }
+  }
+  else {
+    Serial.println("Double click in normal state.");
     if (_onDoubleClick) {
       _onDoubleClick();
     }
@@ -31,8 +38,10 @@ static void bootButtonLongPressStop() {
 }
 
 void buttonSetup(
+  void (*onResetConfirm)(),
   void (*onDoubleClick)()
 ) {
+  _onResetConfirm = onResetConfirm;
   _onDoubleClick = onDoubleClick;
   buttonBoot.setLongPressIntervalMs(LONG_PRESS_TIME);
   buttonBoot.attachDoubleClick(bootButtonDoubleClick);

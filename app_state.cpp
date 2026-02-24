@@ -16,6 +16,8 @@ static unsigned long lastReconnectAttempt = 0;
 static char statusText[STATUS_TEXT_MAX_LENGTH] = "";
 static unsigned long statusTextExpiry = 0;
 
+static bool ntpSyncRequested = false;
+
 void setInited() {
   inited = true;
   Serial.println("App inited.");
@@ -87,4 +89,17 @@ bool isStatusTextActive() {
     return false;
   }
   return true;
+}
+
+void requestNtpSync() {
+  ntpSyncRequested = true;
+  Serial.println("NTP sync requested.");
+}
+
+bool isNtpSyncRequested() {
+  return ntpSyncRequested;
+}
+
+void clearNtpSyncRequest() {
+  ntpSyncRequested = false;
 }

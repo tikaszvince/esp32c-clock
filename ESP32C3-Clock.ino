@@ -20,7 +20,13 @@ void setup() {
   delay(1500);
 
   buttonSetup(
-    []() { resetConfig(); }
+    []() { resetConfig(); },
+    []() {
+      AppState state = getAppState();
+      if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED) {
+        requestNtpSync();
+      }
+    }
   );
 
   Serial.println("\n\nESP32 WiFi Clock");
@@ -101,9 +107,6 @@ void loop() {
       updateClockDisplay();
     }
 
-    if (isNtpSyncDue()) {
-      syncTimeWithNTP(ntpStatusCallback);
-    }
     updateIcons();
   }
   buttonLoop();

@@ -27,4 +27,11 @@ void setStatusText(const char* text, unsigned long timeoutMs);
 const char* getStatusText();
 bool isStatusTextActive();
 
+// Producer (core 1 - button handler):
+void requestNtpSync();
+
+// Consumer (core 0 - NTP task):
+bool isNtpSyncRequested();
+void clearNtpSyncRequest();
+
 #endif
