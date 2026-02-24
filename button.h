@@ -1,12 +1,10 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
-enum ButtonMode { NORMAL, RESET_PENDING };
+#include "app_state.h"
 
-ButtonMode getButtonMode();
 void buttonSetup(
-  void (*onDoubleClick)(),
-  void (*onLongPressStop)()
+  void (*onDoubleClick)()
 );
 void buttonLoop();
 

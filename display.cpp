@@ -1,12 +1,12 @@
+#include <WiFi.h>
+#include <math.h>
+#include <time.h>
 #include "Arduino.h"
 #include "display.h"
 #include "display_constants.h"
 #include "pins.h"
 #include "icons.h"
 #include "config.h"
-#include <WiFi.h>
-#include <math.h>
-#include <time.h>
 
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 

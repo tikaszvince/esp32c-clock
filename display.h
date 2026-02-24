@@ -3,17 +3,26 @@
 
 #include <DIYables_TFT_Round.h>
 #include "display_constants.h"
-#include "states.h"
+
+enum WifiState {
+  WIFI_DISCONNECTED,
+  WIFI_CONNECTING,
+  WIFI_CONNECTED
+};
+enum NtpState{
+  NTP_IDLE,
+  NTP_SYNCING
+};
 
 // Colors
-#define COLOR_BACKGROUND  DIYables_TFT::colorRGB(0, 0, 0)       // Black
-#define COLOR_CLOCKFACE   DIYables_TFT::colorRGB(255, 255, 255) // White
-#define COLOR_HOUR_HAND   DIYables_TFT::colorRGB(255, 255, 255) // White
-#define COLOR_MINUTE_HAND DIYables_TFT::colorRGB(80, 255, 255)  // Cyan
-#define COLOR_SECOND_HAND DIYables_TFT::colorRGB(255, 0, 0)     // Red
-#define COLOR_CENTER_DOT  DIYables_TFT::colorRGB(255, 0, 0)     // Red
-#define COLOR_YELLOW      DIYables_TFT::colorRGB(255, 255, 0)   // Yellow
-#define COLOR_RED         DIYables_TFT::colorRGB(255, 0, 0)
+#define COLOR_BACKGROUND DIYables_TFT::colorRGB(0, 0, 0)
+#define COLOR_CLOCKFACE DIYables_TFT::colorRGB(255, 255, 255)
+#define COLOR_HOUR_HAND DIYables_TFT::colorRGB(255, 255, 255)
+#define COLOR_MINUTE_HAND DIYables_TFT::colorRGB(80, 255, 255)
+#define COLOR_SECOND_HAND DIYables_TFT::colorRGB(255, 0, 0)
+#define COLOR_CENTER_DOT DIYables_TFT::colorRGB(255, 0, 0)
+#define COLOR_YELLOW DIYables_TFT::colorRGB(255, 255, 0)
+#define COLOR_RED DIYables_TFT::colorRGB(255, 0, 0)
 
 extern DIYables_TFT_GC9A01_Round TFT_display;
 

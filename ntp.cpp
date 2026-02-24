@@ -1,18 +1,12 @@
+#include <WiFi.h>
+#include <time.h>
 #include "Arduino.h"
 #include "ntp.h"
 #include "config.h"
-#include <WiFi.h>
-#include <time.h>
-#include "states.h"
-
-const unsigned long NTP_SYNC_INTERVAL = 3UL * 60UL * 60UL * 1000UL;
-unsigned long lastNtp = 0;
-
-static NtpState currentNtpState = NTP_IDLE;
-NtpState getNtpState() { return currentNtpState; }
+#include "app_state.h"
 
 void syncTimeWithNTP(void (*onStatus)(const char*)) {
-  currentNtpState = NTP_SYNCING;
+  setAppState(CONNECTED_SYNCING);
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nSynchronizing time with NTP server...");
@@ -59,7 +53,7 @@ void syncTimeWithNTP(void (*onStatus)(const char*)) {
           timeinfo.tm_sec
         );
         timeSet = true;
-        lastNtp = millis();
+        updateLastNtpSync();
         onStatus("Time synced");
         break;
       }
@@ -69,14 +63,17 @@ void syncTimeWithNTP(void (*onStatus)(const char*)) {
     }
 
     if (!timeSet) {
+      setAppState(CONNECTED_NOT_SYNCED);
       onStatus("Sync failed");
       Serial.println("Failed with all NTP servers!");
+    }
+    else {
+      setAppState(CONNECTED_SYNCED);
     }
   }
   else {
     onStatus("No WiFi");
     Serial.println("Cannot sync - WiFi not connected!");
+    setAppState(DISCONNECTED);
   }
-
-  currentNtpState = NTP_IDLE;
 }

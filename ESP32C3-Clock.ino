@@ -2,7 +2,7 @@
 #include <OneButton.h>
 
 #include "icons.h"
-#include "states.h"
+#include "app_state.h"
 #include "config.h"
 #include "button.h"
 #include "pins.h"
@@ -10,37 +10,37 @@
 #include "display.h"
 #include "ntp.h"
 
+static void ntpStatusCallback(const char* msg) {
+  writeText(msg, true);
+}
+
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
   delay(1500);
 
   buttonSetup(
-    []() { resetConfig(); },
-    []() { /* long press stop — nothing extra needed */ }
+    []() { resetConfig(); }
   );
 
   Serial.println("\n\nESP32 WiFi Clock");
   Serial.println("=================");
 
-  // Initialize TFT display
+  // Initialize TFT display.
   TFT_display.begin();
   TFT_display.setRotation(0);
   TFT_display.fillScreen(COLOR_BACKGROUND);
 
-  // Show WiFi setup instructions
+  // Show WiFi setup instructions.
   if (!loadConfig()) {
+    setAppState(NOT_CONFIGURED);
     displayWifiSetupInstructions();
   }
   else {
     // Draw initial clock face
     drawClockFace();
-    updateIcons();
-
     // Show WiFi setup message
     redrawTextBox("WiFi Setup");
-
-    setWifiState(WIFI_CONNECTING);
     updateIcons();
   }
 
@@ -54,7 +54,6 @@ void setup() {
     TFT_display.setTextSize(1);
     TFT_display.setCursor((SCREEN_WIDTH - (strlen("Restarting...") * 6)) / 2, CENTER_Y + 15);
     TFT_display.print("Restarting...");
-    setWifiState(WIFI_DISCONNECTED);
     updateIcons();
     delay(30000UL);
     ESP.restart();
@@ -62,55 +61,49 @@ void setup() {
 
   // Draw initial clock face
   drawClockFace();
-  setWifiState(WIFI_CONNECTED);
   updateIcons();
 
   // Sync time with NTP server
   redrawTextBox("NTP Sync...");
-  syncTimeWithNTP([](const char* msg){ writeText(msg, true); });
+  syncTimeWithNTP(ntpStatusCallback);
 
   // Draw clock display
   drawTextBox();
   updateClockDisplay();
 
+  setInited();
   Serial.println("Setup complete!");
 }
 
 void loop() {
-  setWifiState(getWifiState());
-  setNtpState(getNtpState());
-
-  // Update clock display every second
+  // Update clock display every second.
   static unsigned long lastUpdate = 0;
-  static ButtonMode lastMode = NORMAL;
+  static AppState lastState = NOT_CONFIGURED;
   unsigned long currentMillis = millis();
 
-  ButtonMode mode = getButtonMode();
+  AppState state = getAppState();
 
   // React to mode changes
-  if (mode != lastMode) {
-    if (mode == RESET_PENDING) {
+  if (state != lastState) {
+    if (state == RESET_PENDING) {
       TFT_display.fillScreen(COLOR_BACKGROUND);
       displayResetQuestion();
     }
-    else if (mode == NORMAL) {
+     else if (lastState == RESET_PENDING) {
       drawClockFace();
     }
-    lastMode = mode;
+    lastState = state;
   }
 
-  if (mode == NORMAL) {
+  if (state != RESET_PENDING) {
     if (currentMillis - lastUpdate >= 1000) {
       lastUpdate = currentMillis;
-      // Serial.println("Updating display...");
       updateClockDisplay();
     }
 
-    if (currentMillis - lastNtp >= NTP_SYNC_INTERVAL) {
-      syncTimeWithNTP([](const char* msg){ writeText(msg, true); });
+    if (isNtpSyncDue()) {
+      syncTimeWithNTP(ntpStatusCallback);
     }
-
-    setNtpState(getNtpState() == NTP_SYNCING ? NTP_SYNCING : NTP_IDLE);
     updateIcons();
   }
   buttonLoop();
