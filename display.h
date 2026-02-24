@@ -3,16 +3,7 @@
 
 #include <DIYables_TFT_Round.h>
 #include "display_constants.h"
-
-enum WifiState {
-  WIFI_DISCONNECTED,
-  WIFI_CONNECTING,
-  WIFI_CONNECTED
-};
-enum NtpState{
-  NTP_IDLE,
-  NTP_SYNCING
-};
+#include "app_state.h"
 
 // Colors
 #define COLOR_BACKGROUND DIYables_TFT::colorRGB(0, 0, 0)
@@ -26,6 +17,11 @@ enum NtpState{
 
 extern DIYables_TFT_GC9A01_Round TFT_display;
 
+void takeDisplayMutex();
+void giveDisplayMutex();
+
+void displaySetup();
+
 void drawClockFace();
 void drawTextBox();
 void redrawTextBox(const char str[]);
@@ -35,12 +31,6 @@ void updateClockDisplay();
 void displayResetQuestion();
 void displayWifiSetupInstructions();
 
-void setWifiState(WifiState state);
-void setNtpState(NtpState state);
-
 void updateIcons();
-void updateWifiIcon();
-void updateSyncIcon();
-void drawIcon(bool visible, int x, const uint16_t* icon);
 
 #endif

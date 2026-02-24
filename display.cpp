@@ -2,18 +2,37 @@
 #include <math.h>
 #include <time.h>
 #include "Arduino.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "display.h"
 #include "display_constants.h"
 #include "pins.h"
 #include "icons.h"
 #include "config.h"
+#include "app_state.h"
 
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 
-static WifiState currentWifiState = WIFI_DISCONNECTED;
-static NtpState  currentNtpState  = NTP_IDLE;
-static bool      blinkState       = false;
-static unsigned long lastBlink    = 0;
+static bool blinkState = false;
+static unsigned long lastBlink = 0;
+static SemaphoreHandle_t displayMutex = NULL;
+
+void takeDisplayMutex() {
+  if (displayMutex != NULL) {
+    xSemaphoreTake(displayMutex, portMAX_DELAY);
+  }
+}
+
+void giveDisplayMutex() {
+  if (displayMutex != NULL) {
+    xSemaphoreGive(displayMutex);
+  }
+}
+
+void displaySetup() {
+  displayMutex = xSemaphoreCreateMutex();
+  Serial.println("Display mutex created.");
+}
 
 void drawClockFace() {
   // Reset screen.
@@ -141,9 +160,45 @@ void displayWifiSetupInstructions() {
   TFT_display.print(pwLine);
 }
 
-// Icons.
-void setWifiState(WifiState state) { currentWifiState = state; }
-void setNtpState(NtpState state)   { currentNtpState  = state; }
+static void drawIcon(bool visible, int x, const uint16_t* icon) {
+  if (visible) {
+    TFT_display.drawRGBBitmap(x, ICON_Y, icon, ICON_WIDTH, ICON_HEIGHT);
+  }
+  else {
+    TFT_display.fillRect(x, ICON_Y, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
+  }
+}
+
+static void updateWifiIcon(AppState state) {
+  bool visible = false;
+  bool okIcon  = true;
+
+  switch (state) {
+    case CONNECTED_NOT_SYNCED:
+    case CONNECTED_SYNCING:
+    case CONNECTED_SYNCED:
+    case RESET_PENDING:
+      visible = true;
+      okIcon = true;
+      break;
+    case CONNECTING:
+      visible = blinkState;
+      okIcon  = true;
+      break;
+    case NOT_CONFIGURED:
+    case DISCONNECTED:
+      visible = true;
+      okIcon = false;
+      break;
+  }
+
+  drawIcon(visible, CENTER_X - 2 - ICON_WIDTH, okIcon ? IconWifiBitmap : IconWifiOffBitmap);
+}
+
+static void updateSyncIcon(AppState state) {
+  bool visible = (state == CONNECTED_SYNCING) ? blinkState : false;
+  drawIcon(visible, CENTER_X + 2, IconSyncBitmap);
+}
 
 void updateIcons() {
   unsigned long now = millis();
@@ -152,52 +207,8 @@ void updateIcons() {
     lastBlink  = now;
   }
 
-  updateWifiIcon();
-  updateSyncIcon();
+  AppState state = getAppState();
+  updateWifiIcon(state);
+  updateSyncIcon(state);
 }
 
-void updateWifiIcon() {
-  bool visible = false;
-  bool okIcon  = true;
-
-  switch (currentWifiState) {
-    case WIFI_CONNECTED:
-      visible = true;
-      okIcon  = true;
-      break;
-    case WIFI_CONNECTING:
-      visible = blinkState;
-      okIcon  = true;
-      break;
-    case WIFI_DISCONNECTED:
-      visible = true;
-      okIcon  = false;
-      break;
-  }
-
-  drawIcon(visible, CENTER_X - 2 - ICON_WIDTH, okIcon ? IconWifiBitmap : IconWifiOffBitmap);
-}
-
-void updateSyncIcon() {
-  bool visible = false;
-
-  switch (currentNtpState) {
-    case NTP_SYNCING:
-      visible = blinkState;
-      break;
-    case NTP_IDLE:
-      visible = false;
-      break;
-  }
-
-  drawIcon(visible, CENTER_X + 2, IconSyncBitmap);
-}
-
-void drawIcon(bool visible, int x, const uint16_t* icon) {
-  if (visible) {
-    TFT_display.drawRGBBitmap(x, ICON_Y, icon, ICON_WIDTH, ICON_HEIGHT);
-  }
-  else {
-    TFT_display.fillRect(x, ICON_Y, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
-  }
-}

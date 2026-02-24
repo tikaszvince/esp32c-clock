@@ -9,6 +9,7 @@
 #include "display_constants.h"
 #include "display.h"
 #include "ntp.h"
+#include "display_task.h"
 
 static void ntpStatusCallback(const char* msg) {
   writeText(msg, true);
@@ -33,9 +34,14 @@ void setup() {
   Serial.println("=================");
 
   // Initialize TFT display.
+  displaySetup();
+  takeDisplayMutex();
   TFT_display.begin();
   TFT_display.setRotation(0);
   TFT_display.fillScreen(COLOR_BACKGROUND);
+  giveDisplayMutex();
+
+  displayTaskStart();
 
   // Show WiFi setup instructions.
   if (!loadConfig()) {
@@ -43,15 +49,18 @@ void setup() {
     displayWifiSetupInstructions();
   }
   else {
+    takeDisplayMutex();
     // Draw initial clock face
     drawClockFace();
     // Show WiFi setup message
     redrawTextBox("WiFi Setup");
     updateIcons();
+    giveDisplayMutex();
   }
 
   // Initialize WiFi configuration (web portal)
   if (!connectWifi()) {
+    takeDisplayMutex();
     TFT_display.fillScreen(COLOR_BACKGROUND);
     TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
     TFT_display.setTextSize(2);
@@ -60,22 +69,30 @@ void setup() {
     TFT_display.setTextSize(1);
     TFT_display.setCursor((SCREEN_WIDTH - (strlen("Restarting...") * 6)) / 2, CENTER_Y + 15);
     TFT_display.print("Restarting...");
+    giveDisplayMutex();
     updateIcons();
     delay(30000UL);
     ESP.restart();
   }
 
   // Draw initial clock face
+  takeDisplayMutex();
   drawClockFace();
   updateIcons();
+  giveDisplayMutex();
 
   // Sync time with NTP server
+  takeDisplayMutex();
   redrawTextBox("NTP Sync...");
+  giveDisplayMutex();
   syncTimeWithNTP(ntpStatusCallback);
 
   // Draw clock display
+  takeDisplayMutex();
   drawTextBox();
   updateClockDisplay();
+  giveDisplayMutex();
+
 
   setInited();
   Serial.println("Setup complete!");
@@ -92,11 +109,15 @@ void loop() {
   // React to mode changes
   if (state != lastState) {
     if (state == RESET_PENDING) {
+      takeDisplayMutex();
       TFT_display.fillScreen(COLOR_BACKGROUND);
       displayResetQuestion();
+      giveDisplayMutex();
     }
      else if (lastState == RESET_PENDING) {
+      takeDisplayMutex();
       drawClockFace();
+      giveDisplayMutex();
     }
     lastState = state;
   }
@@ -104,10 +125,10 @@ void loop() {
   if (state != RESET_PENDING) {
     if (currentMillis - lastUpdate >= 1000) {
       lastUpdate = currentMillis;
+      takeDisplayMutex();
       updateClockDisplay();
+      giveDisplayMutex();
     }
-
-    updateIcons();
   }
   buttonLoop();
 }
