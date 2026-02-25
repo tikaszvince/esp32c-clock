@@ -24,7 +24,15 @@ void displayTaskStart() {
     NULL,
     1,
     &displayTaskHandle,
-    0
+    1  // core 1
   );
-  Serial.println("Display task started.");
+  Serial.println("Display task started on core 1.");
+}
+
+void displayTaskStop() {
+  if (displayTaskHandle != NULL) {
+    vTaskDelete(displayTaskHandle);
+    displayTaskHandle = NULL;
+    Serial.println("Display task stopped.");
+  }
 }

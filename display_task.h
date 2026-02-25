@@ -2,5 +2,6 @@
 #define DISPLAY_TASK_H
 
 void displayTaskStart();
+void displayTaskStop();
 
 #endif

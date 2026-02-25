@@ -12,7 +12,9 @@
 #include "display_task.h"
 
 static void ntpStatusCallback(const char* msg) {
+  takeDisplayMutex();
   writeText(msg, true);
+  giveDisplayMutex();
 }
 
 void setup() {
@@ -46,7 +48,9 @@ void setup() {
   // Show WiFi setup instructions.
   if (!loadConfig()) {
     setAppState(NOT_CONFIGURED);
+    takeDisplayMutex();
     displayWifiSetupInstructions();
+    giveDisplayMutex();
   }
   else {
     takeDisplayMutex();
@@ -93,7 +97,7 @@ void setup() {
   updateClockDisplay();
   giveDisplayMutex();
 
-
+  displayTaskStop();
   setInited();
   Serial.println("Setup complete!");
 }
@@ -101,6 +105,7 @@ void setup() {
 void loop() {
   // Update clock display every second.
   static unsigned long lastUpdate = 0;
+  static unsigned long lastIconUpdate = 0;
   static AppState lastState = NOT_CONFIGURED;
   unsigned long currentMillis = millis();
 
@@ -114,7 +119,7 @@ void loop() {
       displayResetQuestion();
       giveDisplayMutex();
     }
-     else if (lastState == RESET_PENDING) {
+    else if (lastState == RESET_PENDING) {
       takeDisplayMutex();
       drawClockFace();
       giveDisplayMutex();
@@ -129,6 +134,14 @@ void loop() {
       updateClockDisplay();
       giveDisplayMutex();
     }
+
+    if (currentMillis - lastIconUpdate >= BLINK_INTERVAL_MS) {
+      lastIconUpdate = currentMillis;
+      takeDisplayMutex();
+      updateIcons();
+      giveDisplayMutex();
+    }
   }
+
   buttonLoop();
 }
