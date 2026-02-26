@@ -11,12 +11,6 @@
 #include "ntp.h"
 #include "display_task.h"
 
-static void ntpStatusCallback(const char* msg) {
-  takeDisplayMutex();
-  writeText(msg, true);
-  giveDisplayMutex();
-}
-
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
@@ -85,11 +79,8 @@ void setup() {
   updateIcons();
   giveDisplayMutex();
 
-  // Sync time with NTP server
-  takeDisplayMutex();
-  redrawTextBox("NTP Sync...");
-  giveDisplayMutex();
-  syncTimeWithNTP(ntpStatusCallback);
+  // Start NTP Sync  task.
+  ntpTaskStart();
 
   // Draw clock display
   takeDisplayMutex();

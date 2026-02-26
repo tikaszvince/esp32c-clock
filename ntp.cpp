@@ -4,6 +4,46 @@
 #include "ntp.h"
 #include "config.h"
 #include "app_state.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#define NTP_TASK_CHECK_INTERVAL_MS 10000UL // Check every 10 seconds.
+
+static TaskHandle_t ntpTaskHandle = NULL;
+
+static void ntpStatusCallback(const char* msg) {
+  setStatusText(msg, 3000);
+  Serial.print("NTP status: ");
+  Serial.println(msg);
+}
+
+static void ntpTask(void* parameter) {
+  for (;;) {
+    AppState state = getAppState();
+
+    if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED) {
+      if (isNtpSyncRequested() || isNtpSyncDue()) {
+        clearNtpSyncRequest();
+        syncTimeWithNTP(ntpStatusCallback);
+      }
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(NTP_TASK_CHECK_INTERVAL_MS));
+  }
+}
+
+void ntpTaskStart() {
+  xTaskCreatePinnedToCore(
+    ntpTask,
+    "NtpTask",
+    4096,
+    NULL,
+    1,
+    &ntpTaskHandle,
+    0  // core 0
+  );
+  Serial.println("NTP task started on core 0.");
+}
 
 void syncTimeWithNTP(void (*onStatus)(const char*)) {
   setAppState(CONNECTED_SYNCING);
