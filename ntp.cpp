@@ -1,13 +1,13 @@
 #include <WiFi.h>
 #include <time.h>
 #include "Arduino.h"
-#include "ntp.h"
-#include "config.h"
-#include "app_state.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define NTP_TASK_CHECK_INTERVAL_MS 10000UL // Check every 10 seconds.
+#include "ntp.h"
+#include "config.h"
+#include "app_state.h"
+#include "timing_constants.h"
 
 static TaskHandle_t ntpTaskHandle = NULL;
 

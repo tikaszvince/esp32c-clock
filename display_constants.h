@@ -20,11 +20,10 @@
 #define TEXTBOX_Y      160
 
 // Icons
-#define BLINK_INTERVAL_MS 400
-
 #define ICON_WIDTH  24
 #define ICON_HEIGHT 24
 #define ICON_X      (CENTER_X - (ICON_WIDTH / 2))
 #define ICON_Y      (SCREEN_HEIGHT - (TEXTBOX_HEIGHT + TEXTBOX_Y))
 
 #endif
+

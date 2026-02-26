@@ -1,8 +1,7 @@
 #include "Arduino.h"
 #include "app_state.h"
+#include "timing_constants.h"
 
-#define NTP_SYNC_INTERVAL 3UL * 60UL * 60UL * 1000UL  // 3 hours
-#define RECONNECT_INTERVAL 10UL * 60UL * 1000UL         // 10 minutes
 #define STATUS_TEXT_MAX_LENGTH 32
 
 static bool inited = false;
@@ -37,7 +36,7 @@ void setAppState(AppState newState) {
 }
 
 AppState getAppState() {
-  return currentState; 
+  return currentState;
 }
 
 AppState getPreviousState() {
@@ -58,14 +57,14 @@ bool isNtpSyncDue() {
   if (lastNtpSync == 0) {
     return true;
   }
-  return (millis() - lastNtpSync) >= NTP_SYNC_INTERVAL;
+  return (millis() - lastNtpSync) >= NTP_SYNC_INTERVAL_MS;
 }
 
 bool isReconnectDue() {
   if (lastReconnectAttempt == 0) {
     return true;
   }
-  return (millis() - lastReconnectAttempt) >= RECONNECT_INTERVAL;
+  return (millis() - lastReconnectAttempt) >= RECONNECT_INTERVAL_MS;
 }
 
 void setStatusText(const char* text, unsigned long timeoutMs) {

@@ -4,6 +4,7 @@
 #include <DIYables_TFT_Round.h>
 #include "display_constants.h"
 #include "app_state.h"
+#include "timing_constants.h"
 
 // Colors
 #define COLOR_BACKGROUND DIYables_TFT::colorRGB(0, 0, 0)

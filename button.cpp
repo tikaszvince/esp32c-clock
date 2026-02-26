@@ -2,10 +2,8 @@
 #include <OneButton.h>
 #include "button.h"
 #include "pins.h"
-#include "app_state.h"  
-
-#define LONG_PRESS_TIME  5000    // 5 seconds
-#define RESET_TIMEOUT_MS 30000UL // 30 seconds
+#include "app_state.h"
+#include "timing_constants.h"
 
 static OneButton buttonBoot(BOOT_BUTTON_PIN, true);
 static unsigned long resetPendingStart = 0;
@@ -43,7 +41,7 @@ void buttonSetup(
 ) {
   _onResetConfirm = onResetConfirm;
   _onDoubleClick = onDoubleClick;
-  buttonBoot.setLongPressIntervalMs(LONG_PRESS_TIME);
+  buttonBoot.setLongPressIntervalMs(LONG_PRESS_TIME_MS);
   buttonBoot.attachDoubleClick(bootButtonDoubleClick);
   buttonBoot.attachLongPressStop(bootButtonLongPressStop);
 }

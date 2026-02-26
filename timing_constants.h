@@ -1,0 +1,19 @@
+#ifndef TIMING_CONSTANTS_H
+#define TIMING_CONSTANTS_H
+
+// Display update timing.
+#define BLINK_INTERVAL_MS 400UL
+
+// Button timing.
+#define LONG_PRESS_TIME_MS 5000UL
+#define RESET_TIMEOUT_MS 30000UL
+
+// NTP sync timing.
+#define NTP_SYNC_INTERVAL_MS 3UL * 60UL * 60UL * 1000UL
+#define NTP_TASK_CHECK_INTERVAL_MS 10000UL
+
+// WiFi monitor timing.
+#define WIFI_MONITOR_CHECK_INTERVAL_MS 30000UL
+#define RECONNECT_INTERVAL_MS 10UL * 60UL * 1000UL
+
+#endif
