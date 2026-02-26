@@ -10,6 +10,7 @@
 #include "display.h"
 #include "ntp.h"
 #include "display_task.h"
+#include "wifi_monitor.h"
 
 void setup() {
   // Initialize serial communication
@@ -80,6 +81,7 @@ void setup() {
   giveDisplayMutex();
 
   // Start NTP Sync  task.
+  wifiMonitorTaskStart();
   ntpTaskStart();
 
   // Draw clock display
