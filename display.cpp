@@ -71,6 +71,17 @@ void redrawDisplay() {
   activeFace->draw(state, blinkState);
 }
 
+void displayWifiError() {
+  TFT_display.fillScreen(COLOR_BACKGROUND);
+  TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
+  TFT_display.setTextSize(2);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen("WiFi Failed") * 12)) / 2, CENTER_Y - 20);
+  TFT_display.print("WiFi Failed");
+  TFT_display.setTextSize(2);
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen("Restarting...") * 12)) / 2, CENTER_Y + 15);
+  TFT_display.print("Restarting...");
+}
+
 void displayResetQuestion() {
   TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
   TFT_display.setTextSize(3);

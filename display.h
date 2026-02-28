@@ -22,6 +22,7 @@ void displaySetup();
 void setClockFace(ClockFace* face);
 void redrawDisplay();
 
+void displayWifiError();
 void displayResetQuestion();
 void displayWifiSetupInstructions();
 
