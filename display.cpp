@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "display.h"
+#include "app_state.h"
 #include "display_constants.h"
 #include "timing_constants.h"
 #include "pins.h"
@@ -40,13 +41,34 @@ void redrawDisplay() {
 
   static bool blinkState = false;
   static unsigned long lastBlink = 0;
+  static AppState lastState = NOT_CONFIGURED;
+
   unsigned long now = millis();
   if (now - lastBlink >= BLINK_INTERVAL_MS) {
     blinkState = !blinkState;
     lastBlink = now;
   }
 
-  activeFace->draw(blinkState);
+  AppState state = getAppState();
+
+  if (state == RESET_PENDING) {
+    displayResetQuestion();
+    lastState = state;
+    return;
+  }
+
+  if (state == NOT_CONFIGURED) {
+    displayWifiSetupInstructions();
+    lastState = state;
+    return;
+  }
+
+  if (lastState == RESET_PENDING || lastState == NOT_CONFIGURED) {
+    activeFace->reset();
+  }
+
+  lastState = state;
+  activeFace->draw(state, blinkState);
 }
 
 void displayResetQuestion() {

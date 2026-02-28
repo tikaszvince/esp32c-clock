@@ -1,6 +1,5 @@
 #include "clock_face_classic.h"
 #include "display.h"
-#include "app_state.h"
 #include "display_constants.h"
 #include "icons.h"
 
@@ -29,25 +28,11 @@ static const uint8_t ICON_WIFI_Y = 34;
 static const uint8_t ICON_NTP_X = SCREEN_WIDTH - ICON_WIFI_X - ICON_SIZE;
 static const uint8_t ICON_NTP_Y = ICON_WIFI_Y;
 
-void ClockFaceClassic::draw(bool blinkState) {
-  AppState state = getAppState();
+void ClockFaceClassic::reset() {
+  _needsFullRedraw = true;
+}
 
-  if (state == RESET_PENDING) {
-    if (!_needsFullRedraw) {
-      drawResetQuestion();
-      _needsFullRedraw = true;
-    }
-    return;
-  }
-
-  if (state == NOT_CONFIGURED) {
-    if (!_needsFullRedraw) {
-      drawWifiSetupInstructions();
-      _needsFullRedraw = true;
-    }
-    return;
-  }
-
+void ClockFaceClassic::draw(AppState state, bool blinkState) {
   if (_needsFullRedraw) {
     drawBackground();
     drawClockFace();
@@ -87,14 +72,6 @@ void ClockFaceClassic::drawClockFace() {
     }
     yield();
   }
-}
-
-void ClockFaceClassic::drawResetQuestion() {
-  displayResetQuestion();
-}
-
-void ClockFaceClassic::drawWifiSetupInstructions() {
-  displayWifiSetupInstructions();
 }
 
 void ClockFaceClassic::drawTextBoxFrame() {
@@ -210,29 +187,6 @@ static bool isClipped(int x, int y) {
   return false;
 }
 
-static void drawLineClipped(int x0, int y0, int x1, int y1, uint16_t color) {
-  int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-  int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-  int err = dx + dy;
-  while (true) {
-    if (!isClipped(x0, y0)) {
-      TFT_display.drawPixel(x0, y0, color);
-    }
-    if (x0 == x1 && y0 == y1) {
-      break;
-    }
-    int e2 = 2 * err;
-    if (e2 >= dy) {
-      err += dy;
-      x0 += sx;
-    }
-    if (e2 <= dx) {
-      err += dx;
-      y0 += sy;
-    }
-  }
-}
-
 static int collectHandPixels(
   float angleDeg, int length, int width,
   ClockFaceClassic::Pixel* buf, int bufSize
@@ -311,7 +265,7 @@ void ClockFaceClassic::drawHandDiff(
   lastCount = newCount;
 }
 
-float roundAngle(float x) {
+static float roundAngle(float x) {
   return std::floor((x * 10) + 0.5) / 10;
 }
 

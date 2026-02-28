@@ -7,7 +7,8 @@
 
 class ClockFaceClassic : public ClockFace {
 public:
-  void draw(bool blinkState) override;
+  void draw(AppState state, bool blinkState) override;
+  void reset() override;
 
   struct Pixel {
     int16_t x;
@@ -34,8 +35,6 @@ private:
   void drawTextBoxContent(AppState state);
   void drawIcons(AppState state, bool blinkState);
   void drawHands();
-  void drawResetQuestion();
-  void drawWifiSetupInstructions();
   void drawHandDiff(
     int length,
     int width,
