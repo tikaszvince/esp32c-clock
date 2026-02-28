@@ -1,7 +1,6 @@
 #include "Arduino.h"
 #include "display_task.h"
 #include "display.h"
-#include "display_constants.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -10,7 +9,7 @@ static TaskHandle_t displayTaskHandle = NULL;
 static void displayTask(void* parameter) {
   for (;;) {
     takeDisplayMutex();
-    updateIcons();
+    redrawDisplay();
     giveDisplayMutex();
     vTaskDelay(pdMS_TO_TICKS(BLINK_INTERVAL_MS));
   }

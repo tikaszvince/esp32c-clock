@@ -5,6 +5,7 @@
 #include "display_constants.h"
 #include "app_state.h"
 #include "timing_constants.h"
+#include "clock_face.h"
 
 // Colors
 #define COLOR_BACKGROUND DIYables_TFT::colorRGB(0, 0, 0)
@@ -23,6 +24,9 @@ void giveDisplayMutex();
 
 void displaySetup();
 
+void setClockFace(ClockFace* face);
+void redrawDisplay();
+
 void drawClockFace();
 void drawTextBox();
 void redrawTextBox(const char str[]);
@@ -32,6 +36,6 @@ void updateClockDisplay();
 void displayResetQuestion();
 void displayWifiSetupInstructions();
 
-void updateIcons();
+void updateIcons(bool blinkState);
 
 #endif

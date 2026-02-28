@@ -13,9 +13,8 @@
 
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 
-static bool blinkState = false;
-static unsigned long lastBlink = 0;
 static SemaphoreHandle_t displayMutex = NULL;
+static ClockFace* activeFace = NULL;
 
 void takeDisplayMutex() {
   if (displayMutex != NULL) {
@@ -32,6 +31,26 @@ void giveDisplayMutex() {
 void displaySetup() {
   displayMutex = xSemaphoreCreateMutex();
   Serial.println("Display mutex created.");
+}
+
+void setClockFace(ClockFace* face) {
+  activeFace = face;
+}
+
+void redrawDisplay() {
+  if (activeFace == NULL) {
+    return;
+  }
+
+  static bool blinkState = false;
+  static unsigned long lastBlink = 0;
+  unsigned long now = millis();
+  if (now - lastBlink >= BLINK_INTERVAL_MS) {
+    blinkState = !blinkState;
+    lastBlink = now;
+  }
+
+  activeFace->draw(blinkState);
 }
 
 void drawClockFace() {
@@ -169,7 +188,7 @@ static void drawIcon(bool visible, int x, const uint16_t* icon) {
   }
 }
 
-static void updateWifiIcon(AppState state) {
+static void updateWifiIcon(AppState state, bool blinkState) {
   bool visible = false;
   bool okIcon  = true;
 
@@ -183,7 +202,7 @@ static void updateWifiIcon(AppState state) {
       break;
     case CONNECTING:
       visible = blinkState;
-      okIcon  = true;
+      okIcon = true;
       break;
     case NOT_CONFIGURED:
     case DISCONNECTED:
@@ -195,20 +214,13 @@ static void updateWifiIcon(AppState state) {
   drawIcon(visible, CENTER_X - 2 - ICON_WIDTH, okIcon ? IconWifiBitmap : IconWifiOffBitmap);
 }
 
-static void updateSyncIcon(AppState state) {
+static void updateSyncIcon(AppState state, bool blinkState) {
   bool visible = (state == CONNECTED_SYNCING) ? blinkState : false;
   drawIcon(visible, CENTER_X + 2, IconSyncBitmap);
 }
 
-void updateIcons() {
-  unsigned long now = millis();
-  if (now - lastBlink >= BLINK_INTERVAL_MS) {
-    blinkState = !blinkState;
-    lastBlink  = now;
-  }
-
+void updateIcons(bool blinkState) {
   AppState state = getAppState();
-  updateWifiIcon(state);
-  updateSyncIcon(state);
+  updateWifiIcon(state, blinkState);
+  updateSyncIcon(state, blinkState);
 }
-
