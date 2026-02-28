@@ -10,6 +10,7 @@
 #include "ntp.h"
 #include "display_task.h"
 #include "wifi_monitor.h"
+#include "timing_constants.h"
 
 void setup() {
   // Initialize serial communication

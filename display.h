@@ -3,17 +3,12 @@
 
 #include <DIYables_TFT_Round.h>
 #include "display_constants.h"
-#include "app_state.h"
-#include "timing_constants.h"
 #include "clock_face.h"
 
 // Colors
 #define COLOR_BACKGROUND DIYables_TFT::colorRGB(0, 0, 0)
 #define COLOR_CLOCKFACE DIYables_TFT::colorRGB(255, 255, 255)
-#define COLOR_HOUR_HAND DIYables_TFT::colorRGB(255, 255, 255)
-#define COLOR_MINUTE_HAND DIYables_TFT::colorRGB(80, 255, 255)
-#define COLOR_SECOND_HAND DIYables_TFT::colorRGB(255, 0, 0)
-#define COLOR_CENTER_DOT DIYables_TFT::colorRGB(255, 0, 0)
+#define COLOR_MINUTE_HAND DIYables_TFT::colorRGB(0, 255, 136)
 #define COLOR_YELLOW DIYables_TFT::colorRGB(255, 255, 0)
 #define COLOR_RED DIYables_TFT::colorRGB(255, 0, 0)
 

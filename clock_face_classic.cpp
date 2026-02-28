@@ -50,7 +50,8 @@ void ClockFaceClassic::draw(bool blinkState) {
 
   if (_needsFullRedraw) {
     drawBackground();
-    drawTicks();
+    drawClockFace();
+    drawTextBoxFrame();
     _needsFullRedraw = false;
   }
 
@@ -63,7 +64,10 @@ void ClockFaceClassic::drawBackground() {
   TFT_display.fillScreen(COLOR_BACKGROUND);
 }
 
-void ClockFaceClassic::drawTicks() {
+void ClockFaceClassic::drawClockFace() {
+  TFT_display.fillCircle(CENTER_X, CENTER_Y, CENTER_DOT_RING, COLOR_BACKGROUND);
+  TFT_display.fillCircle(CENTER_X, CENTER_Y, CENTER_DOT_RADIUS, COLOR_CLOCKFACE);
+
   for (int i = 0; i < 12; i++) {
     float angle = (i * 30 - 90) * PI / 180.0f;
     bool isMain = (i % 3 == 0);
@@ -191,19 +195,120 @@ void ClockFaceClassic::drawIcons(AppState state, bool blinkState) {
   }
 }
 
-static void drawSingleHand(float angleDeg, int length, int width, uint16_t color) {
+static bool isClipped(int x, int y) {
+  int dx = x - CENTER_X;
+  int dy = y - CENTER_Y;
+  if (dx * dx + dy * dy <= CENTER_DOT_RING * CENTER_DOT_RING) {
+    return true;
+  }
+  if (
+    x >= TEXTBOX_X && x <= TEXTBOX_X + TEXTBOX_WIDTH
+    && y >= TEXTBOX_Y && y <= TEXTBOX_Y + TEXTBOX_HEIGHT
+  ) {
+    return true;
+  }
+  return false;
+}
+
+static void drawLineClipped(int x0, int y0, int x1, int y1, uint16_t color) {
+  int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+  int err = dx + dy;
+  while (true) {
+    if (!isClipped(x0, y0)) {
+      TFT_display.drawPixel(x0, y0, color);
+    }
+    if (x0 == x1 && y0 == y1) {
+      break;
+    }
+    int e2 = 2 * err;
+    if (e2 >= dy) {
+      err += dy;
+      x0 += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      y0 += sy;
+    }
+  }
+}
+
+static int collectHandPixels(
+  float angleDeg, int length, int width,
+  ClockFaceClassic::Pixel* buf, int bufSize
+) {
   float rad = angleDeg * PI / 180.0f;
   float perpRad = rad + PI / 2.0f;
 
   int ex = CENTER_X + (int)(length * cosf(rad));
   int ey = CENTER_Y + (int)(length * sinf(rad));
 
+  int count = 0;
   int half = width / 2;
   for (int i = -half; i <= half; i++) {
     int ox = (int)roundf(i * cosf(perpRad));
     int oy = (int)roundf(i * sinf(perpRad));
-    TFT_display.drawLine(CENTER_X + ox, CENTER_Y + oy, ex + ox, ey + oy, color);
+    int x0 = CENTER_X + ox, y0 = CENTER_Y + oy;
+    int x1 = ex + ox, y1 = ey + oy;
+
+    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy;
+    while (true) {
+      if (!isClipped(x0, y0) && count < bufSize) {
+        buf[count++] = {(int16_t)x0, (int16_t)y0};
+      }
+      if (x0 == x1 && y0 == y1) {
+        break;
+      }
+      int e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x0 += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y0 += sy;
+      }
+    }
   }
+  return count;
+}
+
+void ClockFaceClassic::drawHandDiff(
+  int length,
+  int width,
+  float newAngle,
+  Pixel* lastPixels,
+  int& lastCount,
+  int bufSize,
+  uint16_t color
+) {
+  Pixel newPixels[bufSize];
+  int newCount = collectHandPixels(newAngle, length, width, newPixels, bufSize);
+
+  // Draw new pixels first
+  for (int i = 0; i < newCount; i++) {
+    TFT_display.drawPixel(newPixels[i].x, newPixels[i].y, color);
+  }
+
+  // Erase old pixels that are not in the new set
+  for (int i = 0; i < lastCount; i++) {
+    bool found = false;
+    for (int j = 0; j < newCount; j++) {
+      if (lastPixels[i].x == newPixels[j].x && lastPixels[i].y == newPixels[j].y) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      TFT_display.drawPixel(lastPixels[i].x, lastPixels[i].y, COLOR_BACKGROUND);
+    }
+  }
+
+  // Store new pixels as last
+  memcpy(lastPixels, newPixels, newCount * sizeof(Pixel));
+  lastCount = newCount;
 }
 
 float roundAngle(float x) {
@@ -212,31 +317,34 @@ float roundAngle(float x) {
 
 void ClockFaceClassic::drawHands() {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return;
-  }
+  if (!getLocalTime(&timeinfo)) return;
 
   float hourAngle = roundAngle((timeinfo.tm_hour % 12) * 30.0f + timeinfo.tm_min * 0.5f);
   float minuteAngle = roundAngle(timeinfo.tm_min * 6.0f + timeinfo.tm_sec * 0.1f);
-  bool redrawCenter = false;
 
   if (hourAngle != _lastHourAngle) {
-    drawSingleHand(_lastHourAngle, HOUR_HAND_LENGTH, HOUR_HAND_WIDTH, COLOR_BACKGROUND);
-    drawSingleHand(hourAngle, HOUR_HAND_LENGTH, HOUR_HAND_WIDTH, COLOR_CLOCKFACE);
+    drawHandDiff(
+      HOUR_HAND_LENGTH,
+      HOUR_HAND_WIDTH,
+      hourAngle,
+      _lastHourPixels,
+      _lastHourPixelCount,
+      HOUR_PIXEL_BUF_SIZE,
+      COLOR_CLOCKFACE
+    );
     _lastHourAngle = hourAngle;
-    redrawCenter = true;
   }
 
   if (minuteAngle != _lastMinuteAngle) {
-    drawSingleHand(_lastMinuteAngle, MINUTE_HAND_LENGTH, MINUTE_HAND_WIDTH, COLOR_BACKGROUND);
-    drawSingleHand(minuteAngle, MINUTE_HAND_LENGTH, MINUTE_HAND_WIDTH, COLOR_MINUTE_HAND);
+    drawHandDiff(
+      MINUTE_HAND_LENGTH,
+      MINUTE_HAND_WIDTH,
+      minuteAngle,
+      _lastMinutePixels,
+      _lastMinutePixelCount,
+      MINUTE_PIXEL_BUF_SIZE,
+      COLOR_MINUTE_HAND
+    );
     _lastMinuteAngle = minuteAngle;
-    redrawCenter = true;
-  }
-
-  if (redrawCenter) {  
-    // Center dot always drawn last to cover hand overlap
-    TFT_display.fillCircle(CENTER_X, CENTER_Y, CENTER_DOT_RING, COLOR_BACKGROUND);
-    TFT_display.fillCircle(CENTER_X, CENTER_Y, CENTER_DOT_RADIUS, COLOR_CLOCKFACE);
   }
 }

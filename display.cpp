@@ -1,15 +1,11 @@
-#include <WiFi.h>
-#include <math.h>
-#include <time.h>
 #include "Arduino.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "display.h"
 #include "display_constants.h"
+#include "timing_constants.h"
 #include "pins.h"
-#include "icons.h"
 #include "config.h"
-#include "app_state.h"
 
 DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
 
@@ -96,13 +92,4 @@ void displayWifiSetupInstructions() {
   TFT_display.print(ssidLine);
   TFT_display.setCursor((SCREEN_WIDTH - (strlen(pwLine) * 12)) / 2, CENTER_Y + 25);
   TFT_display.print(pwLine);
-}
-
-static void drawIcon(bool visible, int x, const uint16_t* icon) {
-  if (visible) {
-    TFT_display.drawRGBBitmap(x, 45, icon, ICON_WIDTH, ICON_HEIGHT);
-  }
-  else {
-    TFT_display.fillRect(x, 45, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
-  }
 }

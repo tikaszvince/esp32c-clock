@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "display_task.h"
 #include "display.h"
+#include "timing_constants.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
