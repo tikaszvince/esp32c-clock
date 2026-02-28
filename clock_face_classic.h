@@ -12,6 +12,8 @@ public:
 private:
   bool _needsFullRedraw = true;
   char _lastText[16] = "";
+  float _lastHourAngle = 0;
+  float _lastMinuteAngle = 0;
   void drawBackground();
   void drawTicks();
   void drawTextBoxFrame();
