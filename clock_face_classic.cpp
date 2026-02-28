@@ -317,7 +317,9 @@ float roundAngle(float x) {
 
 void ClockFaceClassic::drawHands() {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) return;
+  if (!getLocalTime(&timeinfo)) {
+    return;
+  }
 
   float hourAngle = roundAngle((timeinfo.tm_hour % 12) * 30.0f + timeinfo.tm_min * 0.5f);
   float minuteAngle = roundAngle(timeinfo.tm_min * 6.0f + timeinfo.tm_sec * 0.1f);
