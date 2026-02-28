@@ -75,7 +75,6 @@ void ClockFaceClassic::drawClockFace() {
 }
 
 void ClockFaceClassic::drawTextBoxFrame() {
-  // TFT_display.fillRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_BACKGROUND);
   TFT_display.drawRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_CLOCKFACE);
 }
 
