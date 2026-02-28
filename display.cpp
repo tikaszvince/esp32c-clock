@@ -53,87 +53,6 @@ void redrawDisplay() {
   activeFace->draw(blinkState);
 }
 
-void drawClockFace() {
-  // Reset screen.
-  TFT_display.fillScreen(COLOR_BACKGROUND);
-  // Draw outer circle
-  TFT_display.drawCircle(CENTER_X, CENTER_Y, CLOCK_RADIUS, COLOR_CLOCKFACE);
-  TFT_display.drawCircle(CENTER_X, CENTER_Y, CLOCK_RADIUS - 1, COLOR_CLOCKFACE);
-
-  // Draw hour markers
-  for (int i = 0; i < 12; i++) {
-    float angle = i * 30 - 90;
-    float angleRad = angle * PI / 180.0;
-
-    // Outer point
-    int x1 = CENTER_X + (CLOCK_RADIUS - 5) * cos(angleRad);
-    int y1 = CENTER_Y + (CLOCK_RADIUS - 5) * sin(angleRad);
-
-    // Inner point
-    int x2 = CENTER_X + (CLOCK_RADIUS - 15) * cos(angleRad);
-    int y2 = CENTER_Y + (CLOCK_RADIUS - 15) * sin(angleRad);
-
-    // Draw thicker lines for 12, 3, 6, 9
-    if (i % 3 == 0) {
-      TFT_display.drawLine(x1,     y1,     x2,     y2,     COLOR_CLOCKFACE);
-      TFT_display.drawLine(x1 + 1, y1,     x2 + 1, y2,     COLOR_CLOCKFACE);
-      TFT_display.drawLine(x1,     y1 + 1, x2,     y2 + 1, COLOR_CLOCKFACE);
-    }
-    else {
-      TFT_display.drawLine(x1, y1, x2, y2, COLOR_CLOCKFACE);
-    }
-    // Prevent watchdog
-    yield();
-  }
-
-  // Draw center dot
-  TFT_display.fillCircle(CENTER_X, CENTER_Y, 4, COLOR_CENTER_DOT);
-  drawTextBox();
-}
-
-void drawTextBox() {
-  // Draw display box.
-  TFT_display.fillRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_BACKGROUND);
-  TFT_display.drawRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_CLOCKFACE);
-}
-
-void redrawTextBox(const char str[]) {
-  drawTextBox();
-  writeText(str, false);
-}
-
-void writeText(const char str[], bool center) {
-  TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
-  TFT_display.setTextSize(2);
-
-  int x = TEXTBOX_X + 5;
-  if (center) {
-    int textWidth = strlen(str) * 12;  // Approximate width
-    x = (SCREEN_WIDTH - textWidth) / 2;
-  }
-
-  TFT_display.setCursor(x, 170);
-  TFT_display.print(str);
-}
-
-void updateClockDisplay() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    Serial.println("ERROR: Failed to get local time!");
-    return;
-  }
-
-  // Display digital time
-  displayDigitalTime(timeinfo);
-}
-
-void displayDigitalTime(struct tm &timeinfo) {
-  // Format time string
-  char timeStr[16];
-  sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-  writeText(timeStr, true);
-}
-
 void displayResetQuestion() {
   TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
   TFT_display.setTextSize(3);
@@ -181,46 +100,9 @@ void displayWifiSetupInstructions() {
 
 static void drawIcon(bool visible, int x, const uint16_t* icon) {
   if (visible) {
-    TFT_display.drawRGBBitmap(x, ICON_Y, icon, ICON_WIDTH, ICON_HEIGHT);
+    TFT_display.drawRGBBitmap(x, 45, icon, ICON_WIDTH, ICON_HEIGHT);
   }
   else {
-    TFT_display.fillRect(x, ICON_Y, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
+    TFT_display.fillRect(x, 45, ICON_WIDTH, ICON_HEIGHT, COLOR_BACKGROUND);
   }
-}
-
-static void updateWifiIcon(AppState state, bool blinkState) {
-  bool visible = false;
-  bool okIcon  = true;
-
-  switch (state) {
-    case CONNECTED_NOT_SYNCED:
-    case CONNECTED_SYNCING:
-    case CONNECTED_SYNCED:
-    case RESET_PENDING:
-      visible = true;
-      okIcon = true;
-      break;
-    case CONNECTING:
-      visible = blinkState;
-      okIcon = true;
-      break;
-    case NOT_CONFIGURED:
-    case DISCONNECTED:
-      visible = true;
-      okIcon = false;
-      break;
-  }
-
-  drawIcon(visible, CENTER_X - 2 - ICON_WIDTH, okIcon ? IconWifiBitmap : IconWifiOffBitmap);
-}
-
-static void updateSyncIcon(AppState state, bool blinkState) {
-  bool visible = (state == CONNECTED_SYNCING) ? blinkState : false;
-  drawIcon(visible, CENTER_X + 2, IconSyncBitmap);
-}
-
-void updateIcons(bool blinkState) {
-  AppState state = getAppState();
-  updateWifiIcon(state, blinkState);
-  updateSyncIcon(state, blinkState);
 }

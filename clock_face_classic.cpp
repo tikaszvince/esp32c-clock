@@ -1,22 +1,191 @@
 #include "clock_face_classic.h"
 #include "display.h"
 #include "app_state.h"
+#include "display_constants.h"
+#include "icons.h"
+
+// Geometry
+static const uint8_t CLOCK_RADIUS = 120;
+static const uint8_t TICK_LENGTH_MAIN = 14;
+static const uint8_t TICK_LENGTH_MINOR = 8;
+static const uint8_t HOUR_HAND_LENGTH = 50;
+static const uint8_t HOUR_HAND_WIDTH = 5;
+static const uint8_t MINUTE_HAND_LENGTH = 93;
+static const uint8_t MINUTE_HAND_WIDTH = 3;
+static const uint8_t CENTER_DOT_RING = 8;
+static const uint8_t CENTER_DOT_RADIUS = 5;
+
+// Textbox
+static const uint8_t TEXTBOX_WIDTH = 140;
+static const uint8_t TEXTBOX_HEIGHT = 35;
+static const uint8_t TEXTBOX_Y = 160;
+static const uint8_t TEXTBOX_X = (SCREEN_WIDTH - TEXTBOX_WIDTH) / 2;
+
+// Icons
+static const uint8_t ICON_SIZE = 24;
+static const uint8_t ICON_GAP = 6;
+static const uint8_t ICON_Y_WIFI = (CENTER_Y - CLOCK_RADIUS + TICK_LENGTH_MAIN) + ICON_GAP;
+static const uint8_t ICON_Y_NTP = ICON_Y_WIFI + ICON_SIZE + ICON_GAP;
 
 void ClockFaceClassic::draw(bool blinkState) {
-  // Phase 8a: delegates to existing display functions unchanged.
-  // Phase 8b will replace this with the new visual design.
   AppState state = getAppState();
 
   if (state == RESET_PENDING) {
-    displayResetQuestion();
+    if (!_needsFullRedraw) {
+      drawResetQuestion();
+      _needsFullRedraw = true;
+    }
     return;
   }
 
   if (state == NOT_CONFIGURED) {
-    displayWifiSetupInstructions();
+    if (!_needsFullRedraw) {
+      drawWifiSetupInstructions();
+      _needsFullRedraw = true;
+    }
     return;
   }
 
-  updateClockDisplay();
-  updateIcons(blinkState);
+  if (_needsFullRedraw) {
+    drawBackground();
+    drawTicks();
+    _needsFullRedraw = false;
+  }
+
+  drawTextBoxContent(state);
+  drawIcons(state, blinkState);
+}
+
+void ClockFaceClassic::drawBackground() {
+  TFT_display.fillScreen(COLOR_BACKGROUND);
+}
+
+void ClockFaceClassic::drawTicks() {
+  for (int i = 0; i < 12; i++) {
+    float angle = (i * 30 - 90) * PI / 180.0f;
+    bool isMain = (i % 3 == 0);
+    int len = isMain ? TICK_LENGTH_MAIN : TICK_LENGTH_MINOR;
+
+    int x1 = CENTER_X + (int)(CLOCK_RADIUS * cosf(angle));
+    int y1 = CENTER_Y + (int)(CLOCK_RADIUS * sinf(angle));
+    int x2 = CENTER_X + (int)((CLOCK_RADIUS - len) * cosf(angle));
+    int y2 = CENTER_Y + (int)((CLOCK_RADIUS - len) * sinf(angle));
+
+    if (isMain) {
+      TFT_display.drawLine(x1, y1, x2, y2, COLOR_CLOCKFACE);
+      TFT_display.drawLine(x1 + 1, y1, x2 + 1, y2, COLOR_CLOCKFACE);
+      TFT_display.drawLine(x1, y1 + 1, x2, y2 + 1, COLOR_CLOCKFACE);
+    } else {
+      TFT_display.drawLine(x1, y1, x2, y2, COLOR_CLOCKFACE);
+    }
+    yield();
+  }
+}
+
+void ClockFaceClassic::drawResetQuestion() {
+  displayResetQuestion();
+}
+
+void ClockFaceClassic::drawWifiSetupInstructions() {
+  displayWifiSetupInstructions();
+}
+
+void ClockFaceClassic::drawTextBoxFrame() {
+  // TFT_display.fillRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_BACKGROUND);
+  TFT_display.drawRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_CLOCKFACE);
+}
+
+void ClockFaceClassic::drawTextBoxContent(AppState state) {
+  char text[16] = "";
+
+  if (isStatusTextActive()) {
+    strncpy(text, getStatusText(), sizeof(text) - 1);
+  }
+  else {
+    switch (state) {
+      case CONNECTED_SYNCED: {
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+          sprintf(text, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        }
+        else {
+          strcpy(text, "--:--:--");
+        }
+        break;
+      }
+      case CONNECTED_NOT_SYNCED:
+        strcpy(text, "No NTP sync");
+        break;
+      case CONNECTED_SYNCING:
+        strcpy(text, "Syncing...");
+        break;
+      case CONNECTING:
+        strcpy(text, "Connecting");
+        break;
+      case DISCONNECTED:
+        strcpy(text, "No WiFi");
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (strlen(text) != strlen(_lastText)) {
+    TFT_display.fillRect(TEXTBOX_X + 1, TEXTBOX_Y + 1, TEXTBOX_WIDTH - 2, TEXTBOX_HEIGHT - 2, COLOR_BACKGROUND);
+  }
+
+  if (strlen(text) == 0) {
+    return;
+  }
+
+  strncpy(_lastText, text, sizeof(_lastText) - 1);
+
+  TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
+  TFT_display.setTextSize(2);
+  int textX = (SCREEN_WIDTH - strlen(text) * 12) / 2;
+  TFT_display.setCursor(textX, TEXTBOX_Y + 10);
+  TFT_display.print(text);
+}
+
+void ClockFaceClassic::drawIcons(AppState state, bool blinkState) {
+  int iconX = CENTER_X - ICON_SIZE / 2;
+
+  bool wifiVisible = true;
+  bool wifiOk = true;
+
+  switch (state) {
+    case CONNECTED_NOT_SYNCED:
+    case CONNECTED_SYNCING:
+    case CONNECTED_SYNCED:
+      wifiVisible = true;
+      wifiOk = true;
+      break;
+    case CONNECTING:
+      wifiVisible = blinkState;
+      wifiOk = true;
+      break;
+    case NOT_CONFIGURED:
+    case DISCONNECTED:
+      wifiVisible = true;
+      wifiOk = false;
+      break;
+    default:
+      wifiVisible = false;
+      break;
+  }
+
+  if (wifiVisible) {
+    TFT_display.drawRGBBitmap(iconX, ICON_Y_WIFI, wifiOk ? IconWifiBitmap : IconWifiOffBitmap, ICON_SIZE, ICON_SIZE);
+  }
+  else {
+    TFT_display.fillRect(iconX, ICON_Y_WIFI, ICON_SIZE, ICON_SIZE, COLOR_BACKGROUND);
+  }
+
+  bool syncVisible = (state == CONNECTED_SYNCING) ? blinkState : false;
+  if (syncVisible) {
+    TFT_display.drawRGBBitmap(iconX, ICON_Y_NTP, IconSyncBitmap, ICON_SIZE, ICON_SIZE);
+  }
+  else {
+    TFT_display.fillRect(iconX, ICON_Y_NTP, ICON_SIZE, ICON_SIZE, COLOR_BACKGROUND);
+  }
 }

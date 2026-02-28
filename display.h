@@ -27,15 +27,8 @@ void displaySetup();
 void setClockFace(ClockFace* face);
 void redrawDisplay();
 
-void drawClockFace();
-void drawTextBox();
-void redrawTextBox(const char str[]);
-void writeText(const char str[], bool center);
-void displayDigitalTime(struct tm &timeinfo);
-void updateClockDisplay();
 void displayResetQuestion();
 void displayWifiSetupInstructions();
 
-void updateIcons(bool blinkState);
 
 #endif
