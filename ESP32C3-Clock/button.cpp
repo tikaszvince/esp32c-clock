@@ -41,9 +41,9 @@ void buttonSetup(
 ) {
   _onResetConfirm = onResetConfirm;
   _onDoubleClick = onDoubleClick;
-  buttonBoot.setDebounceTicks(BUTTON_DEBOUNCE_MS);
-  buttonBoot.setClickTicks(BUTTON_CLICK_MS);
-  buttonBoot.setPressTicks(BUTTON_PRESS_TICK_MS);
+  buttonBoot.setDebounceMs(BUTTON_DEBOUNCE_MS);
+  buttonBoot.setClickMs(BUTTON_CLICK_MS);
+  buttonBoot.setPressMs(BUTTON_PRESS_TICK_MS);
   buttonBoot.setLongPressIntervalMs(LONG_PRESS_TIME_MS);
   buttonBoot.attachDoubleClick(bootButtonDoubleClick);
   buttonBoot.attachLongPressStop(bootButtonLongPressStop);

@@ -98,7 +98,7 @@ static void startupScreenTask(void* parameter) {
     Serial.println("app inited");
   }
   else {
-    Serial.println('app state changed to: ');
+    Serial.println("app state changed to: ");
     Serial.println(getAppState());
   }
   vTaskDelete(NULL);
