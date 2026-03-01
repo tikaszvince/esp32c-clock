@@ -5,6 +5,7 @@
 
 enum ClockFaceType {
   CLOCK_FACE_CLASSIC,
+  CLOCK_FACE_ORBIT,
 };
 
 ClockFace* getInstance(ClockFaceType type);
