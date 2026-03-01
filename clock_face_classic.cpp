@@ -40,9 +40,9 @@ void ClockFaceClassic::draw(AppState state, bool blinkState) {
     _needsFullRedraw = false;
   }
 
+  drawHands();
   drawIcons(state, blinkState);
   drawTextBoxContent(state);
-  drawHands();
 }
 
 void ClockFaceClassic::drawBackground() {
