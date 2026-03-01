@@ -42,6 +42,9 @@ void setup() {
 
   if (!loadConfig()) {
     setAppState(NOT_CONFIGURED);
+    takeDisplayMutex();
+    displayWifiSetupInstructions();
+    giveDisplayMutex();
   }
 
   // Initialize WiFi configuration (web portal)
