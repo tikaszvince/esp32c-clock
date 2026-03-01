@@ -20,6 +20,10 @@ void setup() {
 
   Serial.println("\n\nESP32 WiFi Clock");
   Serial.println("=================");
+  Serial.print("Chip type:       "); Serial.println(ESP.getChipModel());
+  Serial.print("Flash chip size: "); Serial.println(ESP.getFlashChipSize());
+  Serial.print("Free heap:       "); Serial.println(ESP.getFreeHeap());
+  Serial.println("=================");
 
   // Initialize TFT display.
   displaySetup();
