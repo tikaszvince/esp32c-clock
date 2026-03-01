@@ -52,7 +52,9 @@ void redrawDisplay() {
   AppState state = getAppState();
 
   if (state == RESET_PENDING) {
-    displayResetQuestion();
+    if (lastState != state) {
+      displayResetQuestion();
+    }
     lastState = state;
     return;
   }
@@ -83,6 +85,7 @@ void displayWifiError() {
 }
 
 void displayResetQuestion() {
+  TFT_display.fillScreen(COLOR_BACKGROUND);
   TFT_display.setTextColor(COLOR_YELLOW, COLOR_BACKGROUND);
   TFT_display.setTextSize(3);
 
