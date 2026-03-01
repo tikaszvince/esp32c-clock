@@ -77,11 +77,15 @@ void displayWifiError() {
   TFT_display.fillScreen(COLOR_BACKGROUND);
   TFT_display.setTextColor(COLOR_RED, COLOR_BACKGROUND);
   TFT_display.setTextSize(2);
-  TFT_display.setCursor((SCREEN_WIDTH - (strlen("WiFi Failed") * 12)) / 2, CENTER_Y - 20);
-  TFT_display.print("WiFi Failed");
+
+  static char str1[] = "WiFi Failed";
+  static char str2[] = "Restarting...";
+
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str1) * 12)) / 2, CENTER_Y - 20);
+  TFT_display.print(str1);
   TFT_display.setTextSize(2);
-  TFT_display.setCursor((SCREEN_WIDTH - (strlen("Restarting...") * 12)) / 2, CENTER_Y + 15);
-  TFT_display.print("Restarting...");
+  TFT_display.setCursor((SCREEN_WIDTH - (strlen(str2) * 12)) / 2, CENTER_Y + 15);
+  TFT_display.print(str2);
 }
 
 void displayResetQuestion() {
