@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <time.h>
 #include "clock_face.h"
+#include "clock_face_helpers.h"
 #include "app_state.h"
 
 struct BauhausTheme {
@@ -26,11 +27,6 @@ public:
 
   void draw(AppState state, bool blinkState) override;
   void reset() override;
-
-  struct Pixel {
-    int16_t x;
-    int16_t y;
-  };
 
 private:
   explicit ClockFaceBauhaus(const BauhausTheme& theme);
@@ -58,15 +54,6 @@ private:
   void drawBackground();
   void drawFaceRing();
   void drawHands();
-  void drawHandDiff(
-    int length,
-    int width,
-    float newAngle,
-    Pixel* lastPixels,
-    int& lastCount,
-    int bufSize,
-    uint16_t color
-  );
   void drawCounterweight(float hourAngleDeg);
   void drawDigitalTime(int hour, int minute);
   void drawStatusDot(AppState state, bool blinkState);

@@ -49,6 +49,21 @@ void ClockFaceClassic::drawBackground() {
   TFT_display.fillScreen(COLOR_BACKGROUND);
 }
 
+static bool isClippedClassic(int x, int y) {
+  int dx = x - CENTER_X;
+  int dy = y - CENTER_Y;
+  if (dx * dx + dy * dy <= CENTER_DOT_RING * CENTER_DOT_RING) {
+    return true;
+  }
+  if (
+    x >= TEXTBOX_X && x <= TEXTBOX_X + TEXTBOX_WIDTH
+    && y >= TEXTBOX_Y && y <= TEXTBOX_Y + TEXTBOX_HEIGHT
+  ) {
+    return true;
+  }
+  return false;
+}
+
 void ClockFaceClassic::drawClockFace() {
   TFT_display.fillCircle(CENTER_X, CENTER_Y, CENTER_DOT_RING, COLOR_BACKGROUND);
   TFT_display.fillCircle(CENTER_X, CENTER_Y, CENTER_DOT_RADIUS, COLOR_CLOCKFACE);
@@ -131,141 +146,7 @@ void ClockFaceClassic::drawTextBoxContent(AppState state) {
 }
 
 void ClockFaceClassic::drawIcons(AppState state, bool blinkState) {
-  bool wifiVisible = true;
-  bool wifiOk = true;
-
-  switch (state) {
-    case CONNECTED_NOT_SYNCED:
-    case CONNECTED_SYNCING:
-    case CONNECTED_SYNCED:
-      wifiVisible = true;
-      wifiOk = true;
-      break;
-    case CONNECTING:
-      wifiVisible = blinkState;
-      wifiOk = true;
-      break;
-    case NOT_CONFIGURED:
-    case DISCONNECTED:
-      wifiVisible = true;
-      wifiOk = false;
-      break;
-    default:
-      wifiVisible = false;
-      break;
-  }
-
-  if (wifiVisible) {
-    TFT_display.drawRGBBitmap(ICON_WIFI_X, ICON_WIFI_Y, wifiOk ? IconWifiBitmap : IconWifiOffBitmap, ICON_SIZE, ICON_SIZE);
-  }
-  else {
-    TFT_display.fillRect(ICON_WIFI_X, ICON_WIFI_Y, ICON_SIZE, ICON_SIZE, COLOR_BACKGROUND);
-  }
-
-  bool syncVisible = (state == CONNECTED_SYNCING) ? blinkState : false;
-  if (syncVisible) {
-    TFT_display.drawRGBBitmap(ICON_NTP_X, ICON_NTP_Y, IconSyncBitmap, ICON_SIZE, ICON_SIZE);
-  }
-  else {
-    TFT_display.fillRect(ICON_NTP_X, ICON_NTP_Y, ICON_SIZE, ICON_SIZE, COLOR_BACKGROUND);
-  }
-}
-
-static bool isClipped(int x, int y) {
-  int dx = x - CENTER_X;
-  int dy = y - CENTER_Y;
-  if (dx * dx + dy * dy <= CENTER_DOT_RING * CENTER_DOT_RING) {
-    return true;
-  }
-  if (
-    x >= TEXTBOX_X && x <= TEXTBOX_X + TEXTBOX_WIDTH
-    && y >= TEXTBOX_Y && y <= TEXTBOX_Y + TEXTBOX_HEIGHT
-  ) {
-    return true;
-  }
-  return false;
-}
-
-static int collectHandPixels(
-  float angleDeg, int length, int width,
-  ClockFaceClassic::Pixel* buf, int bufSize
-) {
-  float rad = angleDeg * PI / 180.0f;
-  float perpRad = rad + PI / 2.0f;
-
-  int ex = CENTER_X + (int)(length * cosf(rad));
-  int ey = CENTER_Y + (int)(length * sinf(rad));
-
-  int count = 0;
-  int half = width / 2;
-  for (int i = -half; i <= half; i++) {
-    int ox = (int)roundf(i * cosf(perpRad));
-    int oy = (int)roundf(i * sinf(perpRad));
-    int x0 = CENTER_X + ox, y0 = CENTER_Y + oy;
-    int x1 = ex + ox, y1 = ey + oy;
-
-    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-    int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-    int err = dx + dy;
-    while (true) {
-      if (!isClipped(x0, y0) && count < bufSize) {
-        buf[count++] = {(int16_t)x0, (int16_t)y0};
-      }
-      if (x0 == x1 && y0 == y1) {
-        break;
-      }
-      int e2 = 2 * err;
-      if (e2 >= dy) {
-        err += dy;
-        x0 += sx;
-      }
-      if (e2 <= dx) {
-        err += dx;
-        y0 += sy;
-      }
-    }
-  }
-  return count;
-}
-
-void ClockFaceClassic::drawHandDiff(
-  int length,
-  int width,
-  float newAngle,
-  Pixel* lastPixels,
-  int& lastCount,
-  int bufSize,
-  uint16_t color
-) {
-  Pixel newPixels[bufSize];
-  int newCount = collectHandPixels(newAngle, length, width, newPixels, bufSize);
-
-  // Draw new pixels first
-  for (int i = 0; i < newCount; i++) {
-    TFT_display.drawPixel(newPixels[i].x, newPixels[i].y, color);
-  }
-
-  // Erase old pixels that are not in the new set
-  for (int i = 0; i < lastCount; i++) {
-    bool found = false;
-    for (int j = 0; j < newCount; j++) {
-      if (lastPixels[i].x == newPixels[j].x && lastPixels[i].y == newPixels[j].y) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      TFT_display.drawPixel(lastPixels[i].x, lastPixels[i].y, COLOR_BACKGROUND);
-    }
-  }
-
-  // Store new pixels as last
-  memcpy(lastPixels, newPixels, newCount * sizeof(Pixel));
-  lastCount = newCount;
-}
-
-static float roundAngle(float x) {
-  return std::floor((x * 10) + 0.5) / 10;
+  drawStatusIcons(state, blinkState, ICON_WIFI_X, ICON_WIFI_Y, ICON_NTP_X, ICON_NTP_Y);
 }
 
 void ClockFaceClassic::drawHands() {
@@ -285,7 +166,9 @@ void ClockFaceClassic::drawHands() {
       _lastHourPixels,
       _lastHourPixelCount,
       HOUR_PIXEL_BUF_SIZE,
-      COLOR_CLOCKFACE
+      COLOR_CLOCKFACE,
+      COLOR_BACKGROUND,
+      isClippedClassic
     );
     _lastHourAngle = hourAngle;
   }
@@ -298,7 +181,9 @@ void ClockFaceClassic::drawHands() {
       _lastMinutePixels,
       _lastMinutePixelCount,
       MINUTE_PIXEL_BUF_SIZE,
-      COLOR_MINUTE_HAND
+      COLOR_MINUTE_HAND,
+      COLOR_BACKGROUND,
+      isClippedClassic
     );
     _lastMinuteAngle = minuteAngle;
   }

@@ -3,6 +3,7 @@
 #include "clock_face_bauhaus.h"
 #include "display.h"
 #include "display_constants.h"
+#include "clock_face_helpers.h"
 #include "app_state.h"
 
 // Face geometry
@@ -36,7 +37,7 @@ static const int STATUS_DOT_X = CENTER_X;
 static const int STATUS_DOT_Y = CENTER_Y + MARKER_RADIUS;
 static const int STATUS_DOT_RADIUS = MARKER_MAJOR_SIZE;
 
-static bool isClipped(int x, int y) {
+static bool isClippedBauhaus(int x, int y) {
   int dx = x - CENTER_X;
   int dy = y - CENTER_Y;
   if (dx * dx + dy * dy <= CENTER_CLIP_RADIUS * CENTER_CLIP_RADIUS) {
@@ -49,52 +50,6 @@ static bool isClipped(int x, int y) {
     return true;
   }
   return false;
-}
-
-static int collectHandPixels(
-  float angleDeg, int length, int width,
-  ClockFaceBauhaus::Pixel* buf, int bufSize
-) {
-  float rad = angleDeg * PI / 180.0f;
-  float perpRad = rad + PI / 2.0f;
-
-  int ex = CENTER_X + (int)(length * cosf(rad));
-  int ey = CENTER_Y + (int)(length * sinf(rad));
-
-  int count = 0;
-  int half = width / 2;
-  for (int i = -half; i <= half; i++) {
-    int ox = (int)roundf(i * cosf(perpRad));
-    int oy = (int)roundf(i * sinf(perpRad));
-    int x0 = CENTER_X + ox, y0 = CENTER_Y + oy;
-    int x1 = ex + ox, y1 = ey + oy;
-
-    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-    int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-    int err = dx + dy;
-    while (true) {
-      if (!isClipped(x0, y0) && count < bufSize) {
-        buf[count++] = {(int16_t)x0, (int16_t)y0};
-      }
-      if (x0 == x1 && y0 == y1) {
-        break;
-      }
-      int e2 = 2 * err;
-      if (e2 >= dy) {
-        err += dy;
-        x0 += sx;
-      }
-      if (e2 <= dx) {
-        err += dx;
-        y0 += sy;
-      }
-    }
-  }
-  return count;
-}
-
-static float roundAngle(float x) {
-  return std::floor((x * 10) + 0.5f) / 10;
 }
 
 ClockFaceBauhaus::ClockFaceBauhaus(const BauhausTheme& theme)
@@ -155,10 +110,16 @@ void ClockFaceBauhaus::draw(AppState state, bool blinkState) {
     float minuteAngle = roundAngle(timeinfo.tm_min * 6.0f);
 
     if (hourAngle != _lastHourAngle) {
-      drawHandDiff(
-        HOUR_HAND_LENGTH, HOUR_HAND_WIDTH, hourAngle,
-        _lastHourPixels, _lastHourPixelCount, HOUR_PIXEL_BUF_SIZE,
-        _theme.handHour
+     drawHandDiff(
+        HOUR_HAND_LENGTH,
+        HOUR_HAND_WIDTH,
+        hourAngle,
+        _lastHourPixels,
+        _lastHourPixelCount,
+        HOUR_PIXEL_BUF_SIZE,
+        _theme.handHour,
+        _theme.background,
+        isClippedBauhaus
       );
       drawCounterweight(hourAngle);
       _lastHourAngle = hourAngle;
@@ -166,9 +127,15 @@ void ClockFaceBauhaus::draw(AppState state, bool blinkState) {
 
     if (minuteAngle != _lastMinuteAngle) {
       drawHandDiff(
-        MINUTE_HAND_LENGTH, MINUTE_HAND_WIDTH, minuteAngle,
-        _lastMinutePixels, _lastMinutePixelCount, MINUTE_PIXEL_BUF_SIZE,
-        _theme.handMinute
+        MINUTE_HAND_LENGTH,
+        MINUTE_HAND_WIDTH,
+        minuteAngle,
+        _lastMinutePixels,
+        _lastMinutePixelCount,
+        MINUTE_PIXEL_BUF_SIZE,
+        _theme.handMinute,
+        _theme.background,
+        isClippedBauhaus
       );
       _lastMinuteAngle = minuteAngle;
     }
@@ -204,39 +171,6 @@ void ClockFaceBauhaus::drawFaceRing() {
     );
     yield();
   }
-}
-
-void ClockFaceBauhaus::drawHandDiff(
-  int length,
-  int width,
-  float newAngle,
-  Pixel* lastPixels,
-  int& lastCount,
-  int bufSize,
-  uint16_t color
-) {
-  Pixel newPixels[bufSize];
-  int newCount = collectHandPixels(newAngle, length, width, newPixels, bufSize);
-
-  for (int i = 0; i < newCount; i++) {
-    TFT_display.drawPixel(newPixels[i].x, newPixels[i].y, color);
-  }
-
-  for (int i = 0; i < lastCount; i++) {
-    bool found = false;
-    for (int j = 0; j < newCount; j++) {
-      if (lastPixels[i].x == newPixels[j].x && lastPixels[i].y == newPixels[j].y) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      TFT_display.drawPixel(lastPixels[i].x, lastPixels[i].y, _theme.background);
-    }
-  }
-
-  memcpy(lastPixels, newPixels, newCount * sizeof(Pixel));
-  lastCount = newCount;
 }
 
 void ClockFaceBauhaus::drawCounterweight(float hourAngleDeg) {

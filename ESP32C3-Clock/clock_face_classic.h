@@ -3,17 +3,13 @@
 
 #include <cstdint>
 #include "clock_face.h"
+#include "clock_face_helpers.h"
 #include "app_state.h"
 
 class ClockFaceClassic : public ClockFace {
 public:
   void draw(AppState state, bool blinkState) override;
   void reset() override;
-
-  struct Pixel {
-    int16_t x;
-    int16_t y;
-  };
 
 private:
   bool _needsFullRedraw = true;
@@ -35,15 +31,6 @@ private:
   void drawTextBoxContent(AppState state);
   void drawIcons(AppState state, bool blinkState);
   void drawHands();
-  void drawHandDiff(
-    int length,
-    int width,
-    float newAngle,
-    Pixel* lastPixels,
-    int& lastCount,
-    int bufSize,
-    uint16_t color
-  );
 };
 
 #endif

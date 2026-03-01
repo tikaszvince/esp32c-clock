@@ -4,6 +4,7 @@
 #include "clock_face_orbit.h"
 #include "display.h"
 #include "display_constants.h"
+#include "clock_face_helpers.h"
 #include "icons.h"
 
 // Colors local to this face
@@ -216,42 +217,5 @@ void ClockFaceOrbit::drawDaySegments(int dayOfWeek) {
 }
 
 void ClockFaceOrbit::drawIcons(AppState state, bool blinkState) {
-  bool wifiVisible = true;
-  bool wifiOk = true;
-
-  switch (state) {
-    case CONNECTED_NOT_SYNCED:
-    case CONNECTED_SYNCING:
-    case CONNECTED_SYNCED:
-      wifiVisible = true;
-      wifiOk = true;
-      break;
-    case CONNECTING:
-      wifiVisible = blinkState;
-      wifiOk = true;
-      break;
-    case NOT_CONFIGURED:
-    case DISCONNECTED:
-      wifiVisible = true;
-      wifiOk = false;
-      break;
-    default:
-      wifiVisible = false;
-      break;
-  }
-
-  if (wifiVisible) {
-    TFT_display.drawRGBBitmap(ICON_WIFI_X, ICON_WIFI_Y, wifiOk ? IconWifiBitmap : IconWifiOffBitmap, ICON_SIZE, ICON_SIZE);
-  }
-  else {
-    TFT_display.fillRect(ICON_WIFI_X, ICON_WIFI_Y, ICON_SIZE, ICON_SIZE, COLOR_BACKGROUND);
-  }
-
-  bool syncVisible = (state == CONNECTED_SYNCING || isNtpSyncRequested()) ? blinkState : false;
-  if (syncVisible) {
-    TFT_display.drawRGBBitmap(ICON_NTP_X, ICON_NTP_Y, IconSyncBitmap, ICON_SIZE, ICON_SIZE);
-  }
-  else {
-    TFT_display.fillRect(ICON_NTP_X, ICON_NTP_Y, ICON_SIZE, ICON_SIZE, COLOR_BACKGROUND);
-  }
+  drawStatusIcons(state, blinkState, ICON_WIFI_X, ICON_WIFI_Y, ICON_NTP_X, ICON_NTP_Y);
 }
