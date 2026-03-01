@@ -74,7 +74,7 @@ void setup() {
   ntpTaskStart();
 
   // TODO: load last used clockface.
-  setClockFace(getInstance(CLOCK_FACE_CLASSIC));
+  setClockFace(getInstance(CLOCK_FACE_ORBIT));
   setInited();
   Serial.println("Setup complete!");
 }
