@@ -95,6 +95,7 @@ void syncTimeWithNTP(void (*onStatus)(const char*)) {
         timeSet = true;
         updateLastNtpSync();
         onStatus("Time synced");
+        delay(1000);
         break;
       }
       else {

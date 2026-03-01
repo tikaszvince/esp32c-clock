@@ -2,6 +2,7 @@
 #include <OneButton.h>
 
 #include "app_state.h"
+#include "startup_screen.h"
 #include "config.h"
 #include "button.h"
 #include "pins.h"
@@ -20,6 +21,11 @@ void setup() {
   Serial.println("\n\nESP32 WiFi Clock");
   Serial.println("=================");
 
+  // Initialize TFT display.
+  displaySetup();
+  startupScreenTaskStart();
+
+  // Register interactions.
   buttonSetup(
     []() { resetConfig(); },
     []() {
@@ -29,10 +35,6 @@ void setup() {
       }
     }
   );
-
-  // Initialize TFT display.
-  displaySetup();
-  setClockFace(getInstance(CLOCK_FACE_CLASSIC));
 
   takeDisplayMutex();
   TFT_display.begin();
@@ -56,10 +58,19 @@ void setup() {
     ESP.restart();
   }
 
+  // Initialize NTP sync.
+  syncTimeWithNTP([](const char* msg) {
+    setStatusText(msg, 3000);
+    Serial.print("NTP status: ");
+    Serial.println(msg);
+  });
+
   // Start NTP Sync  task.
   wifiMonitorTaskStart();
   ntpTaskStart();
 
+  // TODO: load last used clockface.
+  setClockFace(getInstance(CLOCK_FACE_CLASSIC));
   setInited();
   Serial.println("Setup complete!");
 }
