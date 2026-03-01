@@ -1,9 +1,12 @@
 #include "Arduino.h"
 #include "config.h"
 #include "app_state.h"
+#include "timezones.h"
 
 static String ntp_server = "pool.ntp.org";
 static String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";
+
+static char timezoneSelectBuf[TIMEZONE_SELECT_BUFFER_SIZE];
 
 const char* WIFI_HOTSPOT_SSID = "ESP32-Clock";
 const char* WIFI_HOTSPOT_PASSWORD = "clocksetup";
@@ -47,10 +50,12 @@ bool connectWifi() {
   WiFiManager wm;
   shouldSaveConfig = false;
 
-  WiFiManagerParameter custom_timezone("timezone", "Timezone (POSIX format)", timezone_buffer, 100);
+  buildTimezoneSelect("timezone", timezone_buffer, timezoneSelectBuf, TIMEZONE_SELECT_BUFFER_SIZE);
+  WiFiManagerParameter custom_timezone_select(timezoneSelectBuf);
   WiFiManagerParameter custom_ntp_server("ntp_server", "NTP Server", ntp_server_buffer, 50);
 
-  wm.addParameter(&custom_timezone);
+  wm.addParameter(&custom_timezone_select);
+  //wm.addParameter(&custom_timezone);
   wm.addParameter(&custom_ntp_server);
   wm.setSaveParamsCallback(saveConfigCallback);
   wm.setConfigPortalTimeout(180);
@@ -66,7 +71,7 @@ bool connectWifi() {
 
   if (shouldSaveConfig) {
     Serial.println("Saving new configuration...");
-    strcpy(timezone_buffer, custom_timezone.getValue());
+    strcpy(timezone_buffer, custom_timezone_select.getValue());
     strcpy(ntp_server_buffer, custom_ntp_server.getValue());
 
     timezone = String(timezone_buffer);
