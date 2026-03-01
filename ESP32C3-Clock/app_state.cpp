@@ -1,3 +1,4 @@
+#include <atomic>
 #include "Arduino.h"
 #include "app_state.h"
 #include "timing_constants.h"
@@ -15,7 +16,7 @@ static unsigned long lastReconnectAttempt = 0;
 static char statusText[STATUS_TEXT_MAX_LENGTH] = "";
 static unsigned long statusTextExpiry = 0;
 
-static bool ntpSyncRequested = false;
+static std::atomic<bool> ntpSyncRequested(false);
 
 void setInited() {
   inited = true;

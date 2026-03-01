@@ -5,6 +5,7 @@
 #include "icons.h"
 #include "app_state.h"
 
+static const int HAND_PIXEL_BUF_MAX = 380;
 static const int ICON_SIZE = 24;
 
 int collectHandPixels(
@@ -64,7 +65,9 @@ void drawHandDiff(
   uint16_t backgroundColor,
   bool (*clipFn)(int x, int y)
 ) {
-  Pixel newPixels[bufSize];
+  // Static buffer avoids Variable Length Array stack allocation.
+  // Safe because all calls are serialised by the display mutex.
+  static Pixel newPixels[HAND_PIXEL_BUF_MAX];
   int newCount = collectHandPixels(newAngle, length, width, newPixels, bufSize, clipFn);
 
   for (int i = 0; i < newCount; i++) {

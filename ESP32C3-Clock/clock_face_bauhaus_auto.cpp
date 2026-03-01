@@ -2,6 +2,9 @@
 #include <time.h>
 #include "clock_face_bauhaus_auto.h"
 
+static constexpr int BAUHAUS_LIGHT_HOUR_START = 7;
+static constexpr int BAUHAUS_DARK_HOUR_START  = 19;
+
 ClockFaceBauhausAuto::ClockFaceBauhausAuto()
   : _light(ClockFaceBauhaus::createLight()),
     _dark(ClockFaceBauhaus::createDark()),

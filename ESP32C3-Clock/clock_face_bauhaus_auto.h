@@ -5,9 +5,6 @@
 #include "clock_face_bauhaus.h"
 #include "app_state.h"
 
-static const int BAUHAUS_LIGHT_HOUR_START = 7;
-static const int BAUHAUS_DARK_HOUR_START  = 19;
-
 class ClockFaceBauhausAuto : public ClockFace {
 public:
   ClockFaceBauhausAuto();
