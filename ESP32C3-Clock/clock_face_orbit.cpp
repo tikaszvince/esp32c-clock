@@ -61,7 +61,11 @@ void ClockFaceOrbit::reset() {
   _needsFullRedraw = true;
 }
 
-void ClockFaceOrbit::draw(AppState state, bool blinkState) {
+void ClockFaceOrbit::draw(
+  AppState state,
+  bool blinkState,
+  tm timeinfo
+) {
   if (_needsFullRedraw) {
     drawBackground();
     drawIcons(state, blinkState);
@@ -72,22 +76,18 @@ void ClockFaceOrbit::draw(AppState state, bool blinkState) {
     _needsFullRedraw = false;
   }
 
-  struct tm timeinfo;
-  bool timeValid = getLocalTime(&timeinfo);
-  if (timeValid) {
-    _lastValidHour = timeinfo.tm_hour;
-    _lastValidMinute = timeinfo.tm_min;
-  }
+  _lastValidHour = timeinfo.tm_hour;
+  _lastValidMinute = timeinfo.tm_min;
 
   int displayHour = _lastValidHour;
   int displayMinute = _lastValidMinute;
 
   bool minuteChanged = (displayMinute != _lastMinute);
-  bool dayChanged = timeValid && (timeinfo.tm_mday != _lastDay);
+  bool dayChanged = (timeinfo.tm_mday != _lastDay);
   bool iconsChanged = (state != _lastState || blinkState != _lastBlinkState);
 
   if (minuteChanged) {
-    drawArcTrack(timeValid ? &timeinfo : nullptr, displayMinute);
+    drawArcTrack(&timeinfo, displayMinute);
     drawTime(displayHour, displayMinute);
     _lastMinute = displayMinute;
   }

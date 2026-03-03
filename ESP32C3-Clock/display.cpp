@@ -1,3 +1,4 @@
+#include <time.h>
 #include "Arduino.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -27,6 +28,7 @@ static ClockFace* activeFace = NULL;
     t.tm_min = 36;
     t.tm_sec = 0;
     struct timeval tv = { .tv_sec = mktime(&t), .tv_usec = 0 };
+    struct tm timeinfo;
     settimeofday(&tv, nullptr);
     configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org");
     setAppState(CONNECTED_SYNCED);
@@ -34,7 +36,6 @@ static ClockFace* activeFace = NULL;
     TFT_display.beginCapture(stripY0);
     if (activeFace != NULL) {
       activeFace->reset();
-       struct tm timeinfo;
       if (getLocalTime(&timeinfo)) {
         activeFace->draw(getAppState(), false, timeinfo);
       }
@@ -70,6 +71,7 @@ void redrawDisplay() {
     return;
   }
 
+  struct tm timeinfo;
   static bool blinkState = false;
   static unsigned long lastBlink = 0;
   static AppState lastState = NOT_CONFIGURED;
@@ -101,7 +103,9 @@ void redrawDisplay() {
   }
 
   lastState = state;
-  activeFace->draw(state, blinkState);
+  if (getLocalTime(&timeinfo)) {
+    activeFace->draw(state, blinkState, timeinfo);
+  }
 }
 
 void displayWifiError() {

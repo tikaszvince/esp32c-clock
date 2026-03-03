@@ -90,7 +90,11 @@ void ClockFaceBauhaus::reset() {
   _needsFullRedraw = true;
 }
 
-void ClockFaceBauhaus::draw(AppState state, bool blinkState) {
+void ClockFaceBauhaus::draw(
+  AppState state,
+  bool blinkState,
+  tm timeinfo
+) {
   if (_needsFullRedraw) {
     drawBackground();
     drawFaceRing();
@@ -104,48 +108,46 @@ void ClockFaceBauhaus::draw(AppState state, bool blinkState) {
     _needsFullRedraw = false;
   }
 
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo)) {
-    float hourAngle = roundAngle((timeinfo.tm_hour % 12) * 30.0f + timeinfo.tm_min * 0.5f);
-    float minuteAngle = roundAngle(timeinfo.tm_min * 6.0f);
 
-    if (hourAngle != _lastHourAngle) {
-     drawHandDiff(
-        HOUR_HAND_LENGTH,
-        HOUR_HAND_WIDTH,
-        hourAngle,
-        _lastHourPixels,
-        _lastHourPixelCount,
-        HOUR_PIXEL_BUF_SIZE,
-        _theme.handHour,
-        _theme.background,
-        isClippedBauhaus
-      );
-      drawCounterweight(hourAngle);
-      _lastHourAngle = hourAngle;
-    }
+  float hourAngle = roundAngle((timeinfo.tm_hour % 12) * 30.0f + timeinfo.tm_min * 0.5f);
+  float minuteAngle = roundAngle(timeinfo.tm_min * 6.0f);
 
-    if (minuteAngle != _lastMinuteAngle) {
-      drawHandDiff(
-        MINUTE_HAND_LENGTH,
-        MINUTE_HAND_WIDTH,
-        minuteAngle,
-        _lastMinutePixels,
-        _lastMinutePixelCount,
-        MINUTE_PIXEL_BUF_SIZE,
-        _theme.handMinute,
-        _theme.background,
-        isClippedBauhaus
-      );
-      _lastMinuteAngle = minuteAngle;
-    }
+  if (hourAngle != _lastHourAngle) {
+    drawHandDiff(
+      HOUR_HAND_LENGTH,
+      HOUR_HAND_WIDTH,
+      hourAngle,
+      _lastHourPixels,
+      _lastHourPixelCount,
+      HOUR_PIXEL_BUF_SIZE,
+      _theme.handHour,
+      _theme.background,
+      isClippedBauhaus
+    );
+    drawCounterweight(hourAngle);
+    _lastHourAngle = hourAngle;
+  }
 
-    char timeBuf[6];
-    sprintf(timeBuf, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
-    if (strcmp(timeBuf, _lastTimeText) != 0) {
-      drawDigitalTime(timeinfo.tm_hour, timeinfo.tm_min);
-      strncpy(_lastTimeText, timeBuf, sizeof(_lastTimeText) - 1);
-    }
+  if (minuteAngle != _lastMinuteAngle) {
+    drawHandDiff(
+      MINUTE_HAND_LENGTH,
+      MINUTE_HAND_WIDTH,
+      minuteAngle,
+      _lastMinutePixels,
+      _lastMinutePixelCount,
+      MINUTE_PIXEL_BUF_SIZE,
+      _theme.handMinute,
+      _theme.background,
+      isClippedBauhaus
+    );
+    _lastMinuteAngle = minuteAngle;
+  }
+
+  char timeBuf[6];
+  sprintf(timeBuf, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+  if (strcmp(timeBuf, _lastTimeText) != 0) {
+    drawDigitalTime(timeinfo.tm_hour, timeinfo.tm_min);
+    strncpy(_lastTimeText, timeBuf, sizeof(_lastTimeText) - 1);
   }
 
   drawStatusDot(state, blinkState);

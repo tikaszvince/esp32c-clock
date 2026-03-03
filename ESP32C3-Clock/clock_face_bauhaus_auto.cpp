@@ -17,22 +17,20 @@ ClockFace* ClockFaceBauhausAuto::selectFace(int hour) {
     : &_dark;
 }
 
-void ClockFaceBauhausAuto::draw(AppState state, bool blinkState) {
-  struct tm timeinfo;
+void ClockFaceBauhausAuto::draw(
+  AppState state,
+  bool blinkState,
+  tm timeinfo
+) {
   ClockFace* next;
-  if (getLocalTime(&timeinfo)) {
-    next = selectFace(timeinfo.tm_hour);
-  }
-  else {
-    next = &_dark;
-  }
+  next = selectFace(timeinfo.tm_hour);
 
   if (next != _active) {
     _active = next;
     _active->reset();
   }
 
-  _active->draw(state, blinkState);
+  _active->draw(state, blinkState, timeinfo);
 }
 
 void ClockFaceBauhausAuto::reset() {

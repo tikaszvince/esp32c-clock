@@ -7,7 +7,11 @@
 
 class ClockFaceOrbit : public ClockFace {
 public:
-  void draw(AppState state, bool blinkState) override;
+  void draw(
+    AppState state,
+    bool blinkState,
+    tm timeinfo
+  ) override;
   void reset() override;
 
 private:

@@ -1,6 +1,7 @@
 #ifndef CLOCK_FACE_BAUHAUS_AUTO_H
 #define CLOCK_FACE_BAUHAUS_AUTO_H
 
+#include <time.h>
 #include "clock_face.h"
 #include "clock_face_bauhaus.h"
 #include "app_state.h"
@@ -8,7 +9,11 @@
 class ClockFaceBauhausAuto : public ClockFace {
 public:
   ClockFaceBauhausAuto();
-  void draw(AppState state, bool blinkState) override;
+  void draw(
+    AppState state,
+    bool blinkState,
+    tm timeinfo
+  ) override;
   void reset() override;
 
 private:

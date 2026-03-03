@@ -2,13 +2,18 @@
 #define CLOCK_FACE_CLASSIC_H
 
 #include <cstdint>
+#include <time.h>
 #include "clock_face.h"
 #include "clock_face_helpers.h"
 #include "app_state.h"
 
 class ClockFaceClassic : public ClockFace {
 public:
-  void draw(AppState state, bool blinkState) override;
+  void draw(
+    AppState state,
+    bool blinkState,
+    tm timeinfo
+  ) override;
   void reset() override;
 
 private:
@@ -28,9 +33,9 @@ private:
   void drawBackground();
   void drawClockFace();
   void drawTextBoxFrame();
-  void drawTextBoxContent(AppState state);
+  void drawTextBoxContent(AppState state, tm timeinfo);
   void drawIcons(AppState state, bool blinkState);
-  void drawHands();
+  void drawHands(tm timeinfo);
 };
 
 #endif

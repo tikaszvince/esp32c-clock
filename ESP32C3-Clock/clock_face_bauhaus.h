@@ -25,7 +25,11 @@ public:
   static ClockFaceBauhaus createLight();
   static ClockFaceBauhaus createDark();
 
-  void draw(AppState state, bool blinkState) override;
+  void draw(
+    AppState state,
+    bool blinkState,
+    tm  timeinfo
+  ) override;
   void reset() override;
 
 private:

@@ -1,3 +1,4 @@
+#include <time.h>
 #include "clock_face_classic.h"
 #include "display.h"
 #include "display_constants.h"
@@ -32,7 +33,11 @@ void ClockFaceClassic::reset() {
   _needsFullRedraw = true;
 }
 
-void ClockFaceClassic::draw(AppState state, bool blinkState) {
+void ClockFaceClassic::draw(
+  AppState state,
+  bool blinkState,
+  tm timeinfo
+) {
   if (_needsFullRedraw) {
     drawBackground();
     drawClockFace();
@@ -40,9 +45,9 @@ void ClockFaceClassic::draw(AppState state, bool blinkState) {
     _needsFullRedraw = false;
   }
 
-  drawHands();
+  drawHands(timeinfo);
   drawIcons(state, blinkState);
-  drawTextBoxContent(state);
+  drawTextBoxContent(state, timeinfo);
 }
 
 void ClockFaceClassic::drawBackground() {
@@ -93,7 +98,7 @@ void ClockFaceClassic::drawTextBoxFrame() {
   TFT_display.drawRect(TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT, COLOR_CLOCKFACE);
 }
 
-void ClockFaceClassic::drawTextBoxContent(AppState state) {
+void ClockFaceClassic::drawTextBoxContent(AppState state, tm timeinfo) {
   char text[16] = "";
 
   if (isStatusTextActive()) {
@@ -102,13 +107,7 @@ void ClockFaceClassic::drawTextBoxContent(AppState state) {
   else {
     switch (state) {
       case CONNECTED_SYNCED: {
-        struct tm timeinfo;
-        if (getLocalTime(&timeinfo)) {
-          sprintf(text, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-        }
-        else {
-          strcpy(text, "--:--:--");
-        }
+        sprintf(text, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         break;
       }
       case CONNECTED_NOT_SYNCED:
@@ -149,12 +148,7 @@ void ClockFaceClassic::drawIcons(AppState state, bool blinkState) {
   drawStatusIcons(state, blinkState, ICON_WIFI_X, ICON_WIFI_Y, ICON_NTP_X, ICON_NTP_Y);
 }
 
-void ClockFaceClassic::drawHands() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return;
-  }
-
+void ClockFaceClassic::drawHands(tm timeinfo) {
   float hourAngle = roundAngle((timeinfo.tm_hour % 12) * 30.0f + timeinfo.tm_min * 0.5f);
   float minuteAngle = roundAngle(timeinfo.tm_min * 6.0f + timeinfo.tm_sec * 0.1f);
 
