@@ -1,17 +1,19 @@
-#include <WiFi.h>
 #include <OneButton.h>
-
 #include "app_state.h"
-#include "startup_screen.h"
-#include "config.h"
 #include "button.h"
 #include "pins.h"
 #include "display.h"
 #include "clock_face_factory.h"
-#include "ntp.h"
 #include "display_task.h"
-#include "wifi_monitor.h"
 #include "timing_constants.h"
+
+#if !SCREENSHOT_MODE
+#include <WiFi.h>
+#include "startup_screen.h"
+#include "config.h"
+#include "ntp.h"
+#include "wifi_monitor.h"
+#endif
 
 void setup() {
   // Initialize serial communication
@@ -27,18 +29,20 @@ void setup() {
 
   // Initialize TFT display.
   displaySetup();
-  startupScreenTaskStart();
+  #if !SCREENSHOT_MODE
+    startupScreenTaskStart();
 
-  // Register interactions.
-  buttonSetup(
-    []() { resetConfig(); },
-    []() {
-      AppState state = getAppState();
-      if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED) {
-        requestNtpSync();
+    // Register interactions.
+    buttonSetup(
+      []() { resetConfig(); },
+      []() {
+        AppState state = getAppState();
+        if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED) {
+          requestNtpSync();
+        }
       }
-    }
-  );
+    );
+  #endif
 
   takeDisplayMutex();
   TFT_display.begin();
@@ -46,40 +50,59 @@ void setup() {
   TFT_display.fillScreen(COLOR_BACKGROUND);
   giveDisplayMutex();
 
-  if (!loadConfig()) {
-    setAppState(NOT_CONFIGURED);
-    takeDisplayMutex();
-    displayWifiSetupInstructions();
-    giveDisplayMutex();
-  }
+  #if SCREENSHOT_MODE
+    struct timeval tv = { .tv_sec = 1773945360, .tv_usec = 0 };
+    settimeofday(&tv, nullptr);
+    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org");
+    setAppState(CONNECTED_SYNCED);
+    Serial.print("Largest free contiguous block: ");
+    Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+  #else
+    if (!loadConfig()) {
+      setAppState(NOT_CONFIGURED);
+      takeDisplayMutex();
+      displayWifiSetupInstructions();
+      giveDisplayMutex();
+    }
 
-  // Initialize WiFi configuration (web portal)
-  if (!connectWifi()) {
-    takeDisplayMutex();
-    displayWifiError();
-    giveDisplayMutex();
-    delay(30000UL);
-    ESP.restart();
-  }
+    // Initialize WiFi configuration (web portal)
+    if (!connectWifi()) {
+      takeDisplayMutex();
+      displayWifiError();
+      giveDisplayMutex();
+      delay(30000UL);
+      ESP.restart();
+    }
 
-  // Initialize NTP sync.
-  syncTimeWithNTP([](const char* msg) {
-    setStatusText(msg, 3000);
-    Serial.print("NTP status: ");
-    Serial.println(msg);
-  });
+    // Initialize NTP sync.
+    syncTimeWithNTP([](const char* msg) {
+      setStatusText(msg, 3000);
+      Serial.print("NTP status: ");
+      Serial.println(msg);
+    });
 
-  // Start NTP Sync  task.
-  wifiMonitorTaskStart();
-  ntpTaskStart();
+    // Start NTP Sync  task.
+    wifiMonitorTaskStart();
+    ntpTaskStart();
+  #endif
 
-  // TODO: load last used clockface.
-  setClockFace(getInstance(CLOCK_FACE_ORBIT));
+  #if SCREENSHOT_MODE
+    setClockFace(getInstance(SCREENSHOT_FACE));
+  #else
+    // TODO: load last used clockface.
+    setClockFace(getInstance(CLOCK_FACE_ORBIT));
+  #endif
+
   setInited();
   Serial.println("Setup complete!");
 }
 
 void loop() {
+  #if SCREENSHOT_MODE
+    redrawDisplay();
+    return;
+  #endif
+
   static unsigned long lastRedraw = 0;
   unsigned long currentMillis = millis();
 

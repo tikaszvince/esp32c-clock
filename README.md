@@ -67,6 +67,9 @@ The BOOT button (GPIO 0) built into the ESP32 development board is used for user
 2. PlatformIO will read `platformio.ini` and install all dependencies automatically
 3. Click **Build** then **Upload** from the PlatformIO toolbar, or run `pio run -t upload` from the terminal
 
+### Screenshot mode
+
+TODO: Explain screenshot mode flag.
 ---
 
 ## Configuration
