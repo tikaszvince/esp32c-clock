@@ -8,10 +8,41 @@
 #include "pins.h"
 #include "config.h"
 
-DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
+#if SCREENSHOT_MODE
+  CapturableTFT TFT_display(PIN_RST, PIN_DC, PIN_CS);
+#else
+  DIYables_TFT_GC9A01_Round TFT_display(PIN_RST, PIN_DC, PIN_CS);
+#endif
 
 static SemaphoreHandle_t displayMutex = NULL;
 static ClockFace* activeFace = NULL;
+
+#if SCREENSHOT_MODE
+  void screenshotCaptureStrip(int stripY0, uint16_t* outBuffer) {
+    struct tm t = {};
+    t.tm_year = 2026 - 1900;
+    t.tm_mon = 2; // 0-based, so 2 = March
+    t.tm_mday = 19;
+    t.tm_hour = 18;
+    t.tm_min = 36;
+    t.tm_sec = 0;
+    struct timeval tv = { .tv_sec = mktime(&t), .tv_usec = 0 };
+    settimeofday(&tv, nullptr);
+    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org");
+    setAppState(CONNECTED_SYNCED);
+
+    TFT_display.beginCapture(stripY0);
+    if (activeFace != NULL) {
+      activeFace->reset();
+       struct tm timeinfo;
+      if (getLocalTime(&timeinfo)) {
+        activeFace->draw(getAppState(), false, timeinfo);
+      }
+    }
+    TFT_display.endCapture();
+    memcpy(outBuffer, TFT_display.stripBuffer(), SCREEN_WIDTH * CAPTURE_STRIP_HEIGHT * sizeof(uint16_t));
+  }
+#endif
 
 void takeDisplayMutex() {
   if (displayMutex != NULL) {

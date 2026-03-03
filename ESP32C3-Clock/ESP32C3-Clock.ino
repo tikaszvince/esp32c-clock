@@ -1,5 +1,8 @@
+#include <time.h>
+#include <WiFi.h>
 #include <OneButton.h>
 #include "app_state.h"
+#include "config.h"
 #include "button.h"
 #include "pins.h"
 #include "display.h"
@@ -7,12 +10,12 @@
 #include "display_task.h"
 #include "timing_constants.h"
 
-#if !SCREENSHOT_MODE
-#include <WiFi.h>
-#include "startup_screen.h"
-#include "config.h"
-#include "ntp.h"
-#include "wifi_monitor.h"
+#if SCREENSHOT_MODE
+  #include "screenshot_server.h"
+#else
+  #include "startup_screen.h"
+  #include "ntp.h"
+  #include "wifi_monitor.h"
 #endif
 
 void setup() {
@@ -51,12 +54,28 @@ void setup() {
   giveDisplayMutex();
 
   #if SCREENSHOT_MODE
-    struct timeval tv = { .tv_sec = 1773945360, .tv_usec = 0 };
+    Serial.println("=================");
+    Serial.print("SCREENSHOT MODE ACTIVE");
+    Serial.println("=================");
+    loadConfig();
+    if (!connectWifi()) {
+      Serial.println("WiFi connection failed!");
+    }
+
+    struct tm t = {};
+    t.tm_year = 2026 - 1900;
+    t.tm_mon = 2; // 0-based, so 2 = March
+    t.tm_mday = 19;
+    t.tm_hour = 18;
+    t.tm_min = 36;
+    t.tm_sec = 0;
+    struct timeval tv = { .tv_sec = mktime(&t), .tv_usec = 0 };
     settimeofday(&tv, nullptr);
     configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org");
     setAppState(CONNECTED_SYNCED);
     Serial.print("Largest free contiguous block: ");
     Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    screenshotServerSetup();
   #else
     if (!loadConfig()) {
       setAppState(NOT_CONFIGURED);
@@ -99,19 +118,19 @@ void setup() {
 
 void loop() {
   #if SCREENSHOT_MODE
+    screenshotServerLoop();
     redrawDisplay();
-    return;
+  #else
+    static unsigned long lastRedraw = 0;
+    unsigned long currentMillis = millis();
+
+    if (currentMillis - lastRedraw >= BLINK_INTERVAL_MS) {
+      lastRedraw = currentMillis;
+      takeDisplayMutex();
+      redrawDisplay();
+      giveDisplayMutex();
+    }
+
+    buttonLoop();
   #endif
-
-  static unsigned long lastRedraw = 0;
-  unsigned long currentMillis = millis();
-
-  if (currentMillis - lastRedraw >= BLINK_INTERVAL_MS) {
-    lastRedraw = currentMillis;
-    takeDisplayMutex();
-    redrawDisplay();
-    giveDisplayMutex();
-  }
-
-  buttonLoop();
 }
