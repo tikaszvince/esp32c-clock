@@ -69,7 +69,22 @@ The BOOT button (GPIO 0) built into the ESP32 development board is used for user
 
 ### Screenshot mode
 
-TODO: Explain screenshot mode flag.
+Screenshot mode is a special build configuration that renders a clock face to a BMP image and serves it over HTTP.
+It is useful for capturing reference images of each clock face without needing a camera.
+
+To enable it, set the build flags in `platformio.ini`:
+```ini
+build_flags =
+  -DSCREENSHOT_MODE=1
+  -DSCREENSHOT_FACE=CLOCK_FACE_ORBIT
+```
+
+`SCREENSHOT_FACE` accepts any value from the `ClockFaceType` enum in `clock_face_factory.h`. The hardcoded time displayed on the face is set in `ESP32C3-Clock.ino` and `display.cpp` and can be adjusted there before building.
+
+WiFi/NTP, the startup screen, and button handling are all disabled in this mode. The device connects using previously saved WiFi credentials and starts an HTTP server. Once it prints the IP address to the serial console, navigate to: `http://<device-ip>/screenshot`
+
+The response is a 240×240 BMP file. The image is rendered in 16-row strips due to heap constraints, so the request takes several seconds to complete. After downloading, restore the normal build by setting `SCREENSHOT_MODE=0` and flashing again.
+
 ---
 
 ## Configuration
@@ -129,7 +144,7 @@ The display output is abstracted behind a `ClockFace` interface defined in `cloc
 ```cpp
 class ClockFace {
 public:
-  virtual void draw(AppState state, bool blinkState) = 0;
+  virtual void draw(AppState state, bool blinkState, tm timeinfo) = 0;
   virtual void reset() = 0;
   virtual ~ClockFace() {}
 };
@@ -142,6 +157,21 @@ The active face is set via `setClockFace()` and retrieved from the factory:
 ```cpp
 setClockFace(getInstance(CLOCK_FACE_CLASSIC));
 ```
+
+### Available clock faces
+
+| `ClockFaceType` | Description |
+|---|---|
+| `CLOCK_FACE_CLASSIC` | Traditional analog clock with hour and minute hands, tick marks, and a digital seconds readout |
+| `CLOCK_FACE_ORBIT` | Concentric arcs showing year/month/day/minute progress with large digital time and date |
+| `CLOCK_FACE_BAUHAUS_LIGHT` | Bauhaus-inspired analog face, light theme |
+| `CLOCK_FACE_BAUHAUS_DARK` | Bauhaus-inspired analog face, dark theme |
+| `CLOCK_FACE_BAUHAUS_AUTO` | Switches automatically between light and dark Bauhaus themes at 07:00 and 19:00 |
+
+![Classic](screenshots/clockface_classic.png)
+![Orbit](screenshots/clockface_orbit.png)
+![Bauhaus light](screenshots/clockface_bauhaus_light.png)
+![Bauhaus dark](screenshots/clockface_bauhaus_dark.png)
 
 ### Implementing a new clock face
 
@@ -158,7 +188,7 @@ setClockFace(getInstance(CLOCK_FACE_CLASSIC));
 
 class ClockFaceYourName : public ClockFace {
 public:
-  void draw(AppState state, bool blinkState) override;
+  void draw(AppState state, bool blinkState, tm timeinfo) override;
   void reset() override;
 };
 
