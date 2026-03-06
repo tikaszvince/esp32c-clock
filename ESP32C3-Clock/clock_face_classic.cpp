@@ -42,6 +42,10 @@ void ClockFaceClassic::draw(
     drawBackground();
     drawClockFace();
     drawTextBoxFrame();
+    _lastHourAngle = -1.0f;
+    _lastMinuteAngle = -1.0f;
+    _lastHourPixelCount = 0;
+    _lastMinutePixelCount = 0;
     _needsFullRedraw = false;
   }
 

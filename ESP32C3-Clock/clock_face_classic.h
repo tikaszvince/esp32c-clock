@@ -19,8 +19,8 @@ public:
 private:
   bool _needsFullRedraw = true;
   char _lastText[16] = "";
-  float _lastHourAngle = 0;
-  float _lastMinuteAngle = 0;
+  float _lastHourAngle = -1.0f;
+  float _lastMinuteAngle = -1.0f;
 
   static const int HOUR_PIXEL_BUF_SIZE = 300;
   static const int MINUTE_PIXEL_BUF_SIZE = 320;
