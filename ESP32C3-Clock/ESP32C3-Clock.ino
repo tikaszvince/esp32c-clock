@@ -56,22 +56,12 @@ void setup() {
   #if SCREENSHOT_MODE
     Serial.println("=================");
     Serial.print("SCREENSHOT MODE ACTIVE");
-    Serial.println("=================");
+    Serial.print("=================");
     loadConfig();
     if (!connectWifi()) {
       Serial.println("WiFi connection failed!");
     }
 
-    struct tm t = {};
-    t.tm_year = 2026 - 1900;
-    t.tm_mon = 2; // 0-based, so 2 = March
-    t.tm_mday = 19;
-    t.tm_hour = 18;
-    t.tm_min = 36;
-    t.tm_sec = 0;
-    struct timeval tv = { .tv_sec = mktime(&t), .tv_usec = 0 };
-    settimeofday(&tv, nullptr);
-    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org");
     setAppState(CONNECTED_SYNCED);
     Serial.print("Largest free contiguous block: ");
     Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
@@ -118,8 +108,8 @@ void setup() {
 
 void loop() {
   #if SCREENSHOT_MODE
-    screenshotServerLoop();
     redrawDisplay();
+    screenshotServerLoop();
   #else
     static unsigned long lastRedraw = 0;
     unsigned long currentMillis = millis();

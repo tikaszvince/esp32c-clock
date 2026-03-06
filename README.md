@@ -77,9 +77,16 @@ To enable it, set the build flags in `platformio.ini`:
 build_flags =
   -DSCREENSHOT_MODE=1
   -DSCREENSHOT_FACE=CLOCK_FACE_ORBIT
+  -DSCREENSHOT_YEAR=2026
+  -DSCREENSHOT_MONTH=3
+  -DSCREENSHOT_DAY=19
+  -DSCREENSHOT_HOUR=10
+  -DSCREENSHOT_MIN=10
 ```
 
 `SCREENSHOT_FACE` accepts any value from the `ClockFaceType` enum in `clock_face_factory.h`. The hardcoded time displayed on the face is set in `ESP32C3-Clock.ino` and `display.cpp` and can be adjusted there before building.
+
+The time displayed on the face is controlled by `SCREENSHOT_YEAR`, `SCREENSHOT_MONTH` (1-based), `SCREENSHOT_DAY`, `SCREENSHOT_HOUR`, and `SCREENSHOT_MIN`. These default to 2026-03-19 at 10:10 if not overridden.
 
 WiFi/NTP, the startup screen, and button handling are all disabled in this mode. The device connects using previously saved WiFi credentials and starts an HTTP server. Once it prints the IP address to the serial console, navigate to: `http://<device-ip>/screenshot`
 

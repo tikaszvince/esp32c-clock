@@ -78,6 +78,7 @@ void giveDisplayMutex();
 void displaySetup();
 
 void setClockFace(ClockFace* face);
+bool getDisplayTime(struct tm* timeinfo);
 void redrawDisplay();
 
 void displayWifiError();

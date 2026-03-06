@@ -18,27 +18,29 @@
 static SemaphoreHandle_t displayMutex = NULL;
 static ClockFace* activeFace = NULL;
 
+bool getDisplayTime(struct tm* timeinfo) {
+  #if SCREENSHOT_MODE
+    *timeinfo = {};
+    timeinfo->tm_year = SCREENSHOT_YEAR - 1900;
+    timeinfo->tm_mon  = SCREENSHOT_MONTH - 1;
+    timeinfo->tm_mday = SCREENSHOT_DAY;
+    timeinfo->tm_hour = SCREENSHOT_HOUR;
+    timeinfo->tm_min  = SCREENSHOT_MIN;
+    timeinfo->tm_sec  = 0;
+    mktime(timeinfo);
+    return true;
+  #else
+    return getLocalTime(timeinfo);
+  #endif
+}
+
 #if SCREENSHOT_MODE
   void screenshotCaptureStrip(int stripY0, uint16_t* outBuffer) {
-    struct tm t = {};
-    t.tm_year = 2026 - 1900;
-    t.tm_mon = 2; // 0-based, so 2 = March
-    t.tm_mday = 19;
-    t.tm_hour = 18;
-    t.tm_min = 36;
-    t.tm_sec = 0;
-    struct timeval tv = { .tv_sec = mktime(&t), .tv_usec = 0 };
     struct tm timeinfo;
-    settimeofday(&tv, nullptr);
-    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org");
-    setAppState(CONNECTED_SYNCED);
-
     TFT_display.beginCapture(stripY0);
-    if (activeFace != NULL) {
+    if (activeFace != NULL && getDisplayTime(&timeinfo)) {
       activeFace->reset();
-      if (getLocalTime(&timeinfo)) {
-        activeFace->draw(getAppState(), false, timeinfo);
-      }
+      activeFace->draw(CONNECTED_SYNCED, false, timeinfo);
     }
     TFT_display.endCapture();
     memcpy(outBuffer, TFT_display.stripBuffer(), SCREEN_WIDTH * CAPTURE_STRIP_HEIGHT * sizeof(uint16_t));
@@ -103,7 +105,7 @@ void redrawDisplay() {
   }
 
   lastState = state;
-  if (getLocalTime(&timeinfo)) {
+  if (getDisplayTime(&timeinfo)) {
     activeFace->draw(state, blinkState, timeinfo);
   }
 }
