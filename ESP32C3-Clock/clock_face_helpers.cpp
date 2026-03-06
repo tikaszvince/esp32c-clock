@@ -16,7 +16,7 @@ int collectHandPixels(
   int bufSize,
   bool (*clipFn)(int x, int y)
 ) {
-  float rad = angleDeg * PI / 180.0f;
+  float rad = (angleDeg - 90.0f) * PI / 180.0f;
   float perpRad = rad + PI / 2.0f;
 
   int ex = CENTER_X + (int)(length * cosf(rad));
