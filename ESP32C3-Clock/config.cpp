@@ -15,6 +15,7 @@ static Preferences preferences;
 static char timezone_buffer[100];
 static char ntp_server_buffer[50];
 static bool shouldSaveConfig = false;
+static bool powersafe_mode = true;
 
 static void saveConfigCallback() {
   Serial.println("Should save config");
@@ -26,6 +27,9 @@ bool loadConfig() {
   String saved_tz = preferences.getString("timezone", "CET-1CEST,M3.5.0,M10.5.0/3");
   String saved_ntp = preferences.getString("ntp_server", "pool.ntp.org");
   bool wifiConfigured = preferences.getBool("wifi_configured", false);
+  bool saved_powersafe = preferences.getBool("powersafe", true);
+  powersafe_mode = saved_powersafe;
+
   preferences.end();
 
   strcpy(timezone_buffer, saved_tz.c_str());
@@ -55,10 +59,24 @@ bool connectWifi() {
   WiFiManagerParameter custom_ntp_server("ntp_server", "NTP Server", ntp_server_buffer, 50);
 
   wm.addParameter(&custom_timezone_select);
-  //wm.addParameter(&custom_timezone);
   wm.addParameter(&custom_ntp_server);
   wm.setSaveParamsCallback(saveConfigCallback);
   wm.setConfigPortalTimeout(180);
+
+  char powersafeHtml[256];
+  snprintf(
+    powersafeHtml,
+    sizeof(powersafeHtml),
+    "<label for='powersafe'>Power safe mode. Disable networking when not needed</label>"
+    "<select name='powersafe'>"
+    "<option value='1'%s>Enabled</option>"
+    "<option value='0'%s>Disabled</option>"
+    "</select>",
+    powersafe_mode ? " selected" : "",
+    powersafe_mode ? "" : " selected"
+  );
+  WiFiManagerParameter custom_powersafe(powersafeHtml);
+  wm.addParameter(&custom_powersafe);
 
   Serial.println("Calling autoConnect...");
   bool connected = wm.autoConnect(WIFI_HOTSPOT_SSID, WIFI_HOTSPOT_PASSWORD);
@@ -73,6 +91,7 @@ bool connectWifi() {
     Serial.println("Saving new configuration...");
     strcpy(timezone_buffer, custom_timezone_select.getValue());
     strcpy(ntp_server_buffer, custom_ntp_server.getValue());
+    powersafe_mode = strcmp(custom_powersafe.getValue(), "1") == 0;
 
     timezone = String(timezone_buffer);
     ntp_server = String(ntp_server_buffer);
@@ -83,6 +102,7 @@ bool connectWifi() {
   preferences.putString("timezone", timezone_buffer);
   preferences.putString("ntp_server", ntp_server_buffer);
   preferences.putBool("wifi_configured", true);
+  preferences.putBool("powersafe", powersafe_mode);
   preferences.end();
 
   Serial.println("\nWiFi connected!");
@@ -115,4 +135,34 @@ String getTimezone()  {
 }
 String getNTPServer() {
   return ntp_server;
+}
+
+bool getPowersafeMode() {
+  return powersafe_mode;
+}
+
+bool reconnectWifi() {
+  Serial.println("Reconnecting to WiFi...");
+  setAppState(CONNECTING);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin();
+
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi reconnected!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+    setAppState(CONNECTED_NOT_SYNCED);
+    return true;
+  }
+
+  Serial.println("\nReconnect failed, falling back to full connect...");
+  return connectWifi();
 }

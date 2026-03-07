@@ -19,4 +19,8 @@ bool loadConfig();
 bool connectWifi();
 void resetConfig();
 
+// Returns true if WiFi reconnected successfully.
+bool reconnectWifi();
+bool getPowersafeMode();
+
 #endif

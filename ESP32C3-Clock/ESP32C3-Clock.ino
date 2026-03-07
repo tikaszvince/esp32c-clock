@@ -1,6 +1,7 @@
 #include <time.h>
 #include <WiFi.h>
 #include <OneButton.h>
+#include "esp_bt.h"
 #include "app_state.h"
 #include "config.h"
 #include "button.h"
@@ -23,6 +24,11 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
 
+  // Disable BT device.
+  btStop();
+  esp_bt_controller_disable();
+  esp_bt_controller_deinit();
+
   Serial.println("\n\nESP32 WiFi Clock");
   Serial.println("=================");
   Serial.print("Chip type:       "); Serial.println(ESP.getChipModel());
@@ -40,7 +46,7 @@ void setup() {
       []() { resetConfig(); },
       []() {
         AppState state = getAppState();
-        if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED) {
+        if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED || state == SYNCED_WIFI_OFF) {
           requestNtpSync();
         }
       }

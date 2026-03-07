@@ -116,6 +116,33 @@ You can force an immediate NTP time synchronization by double-clicking the butto
 
 You can reset all saved configuration by holding the button for 5 seconds until the display shows a confirmation prompt, then double-clicking to confirm. This erases the stored WiFi credentials, timezone, and NTP server settings and restarts the device into first-time setup mode. If you do not confirm within 30 seconds the device cancels the reset and returns to normal operation automatically.
 
+---
+
+## Power saving
+
+Power save mode reduces energy consumption by disabling the Bluetooth radio permanently and turning off the WiFi radio between NTP synchronizations.
+
+### Bluetooth
+
+Bluetooth is disabled unconditionally at startup since the project does not use it. This is a one-time call during `setup()` and requires no configuration.
+
+### WiFi power save mode
+
+When enabled, the WiFi radio is turned off shortly after each successful NTP sync and brought back up only when the next sync is due. The device keeps accurate time between syncs using the ESP32's internal RTC, which continues running with the radio off.
+
+The device status reflects this with a dedicated `SYNCED_WIFI_OFF` state. Clock faces treat this state as normal operation — no error icons are shown.
+
+This option can be toggled in the WiFi configuration portal under **Power safe mode. Disable networking when not needed**. It defaults to enabled and is saved to non-volatile storage alongside the other settings.
+
+### Power save timing constants
+
+| Constant | Default | Description |
+|---|---|---|
+| `WIFI_OFF_AFTER_SYNC_MS` | 60000ms | How long WiFi stays on after a successful sync before being turned off |
+| `NTP_SYNC_DELAY_MS` | 30000ms | How long to wait after WiFi reconnects before attempting NTP sync, allowing the connection to stabilize |
+
+Both constants are defined in `timing_constants.h`.
+
 ### Timing constants
 
 Button timing can be adjusted in `timing_constants.h` if your hardware requires it. Physical buttons vary in their bounce characteristics between boards and components:

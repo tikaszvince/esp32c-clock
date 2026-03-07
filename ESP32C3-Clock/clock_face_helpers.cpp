@@ -118,6 +118,9 @@ void drawStatusIcons(
       wifiVisible = true;
       wifiOk = false;
       break;
+    case SYNCED_WIFI_OFF:
+      wifiVisible = false;
+      break;
     default:
       wifiVisible = false;
       break;

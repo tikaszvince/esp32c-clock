@@ -16,7 +16,7 @@ static void wifiMonitorTask(void* parameter) {
 
     AppState state = getAppState();
 
-    if (state == RESET_PENDING || state == CONNECTING || state == NOT_CONFIGURED) {
+    if (state == RESET_PENDING || state == CONNECTING || state == NOT_CONFIGURED || state == SYNCED_WIFI_OFF) {
       continue;
     }
 

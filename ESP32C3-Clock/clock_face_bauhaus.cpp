@@ -214,6 +214,9 @@ void ClockFaceBauhaus::drawStatusDot(AppState state, bool blinkState) {
   if (state == DISCONNECTED || state == NOT_CONFIGURED) {
     color = _theme.statusNoWifi;
   }
+  else if (state == SYNCED_WIFI_OFF) {
+    color = _theme.markerMajor;
+  }
   else if (state == CONNECTED_SYNCING || isNtpSyncRequested()) {
     color = blinkState ? _theme.statusSyncing : _theme.background;
   }

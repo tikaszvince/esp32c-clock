@@ -18,13 +18,41 @@ static void ntpStatusCallback(const char* msg) {
 }
 
 static void ntpTask(void* parameter) {
+  static unsigned long wifiOffAt = 0;
+  if (getAppState() == CONNECTED_SYNCED) {
+    wifiOffAt = millis();
+  }
+
   for (;;) {
     AppState state = getAppState();
+    bool syncNeeded = isNtpSyncRequested() || isNtpSyncDue();
+
+    if (state == SYNCED_WIFI_OFF && syncNeeded) {
+      if (reconnectWifi()) {
+        Serial.println("Waiting before NTP sync...");
+        vTaskDelay(pdMS_TO_TICKS(NTP_SYNC_DELAY_MS));
+      }
+      state = getAppState();
+    }
 
     if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED) {
-      if (isNtpSyncRequested() || isNtpSyncDue()) {
+      if (syncNeeded) {
         clearNtpSyncRequest();
         syncTimeWithNTP(ntpStatusCallback);
+        wifiOffAt = millis();
+      }
+
+      if (getPowersafeMode()) {
+        if (wifiOffAt > 0 && (millis() - wifiOffAt) >= WIFI_OFF_AFTER_SYNC_MS) {
+          Serial.println("Turning WiFi off for power saving...");
+          WiFi.disconnect(true);
+          WiFi.mode(WIFI_OFF);
+          wifiOffAt = 0;
+          setAppState(SYNCED_WIFI_OFF);
+        }
+        else {
+          Serial.println("Power saving mode active. Delay...");
+        }
       }
     }
 

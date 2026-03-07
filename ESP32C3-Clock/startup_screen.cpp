@@ -57,7 +57,7 @@ static void startupScreenTask(void* parameter) {
       || state == CONNECTED_NOT_SYNCED
       || state == CONNECTED_SYNCED
     ) {
-      Serial.print("Startup screen should terminate");
+      Serial.println("Startup screen should terminate");
       break;
     }
 
