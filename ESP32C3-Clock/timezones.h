@@ -7,9 +7,11 @@ static const int TIMEZONE_SELECT_BUFFER_SIZE = 7 * 1024; // 7 KB
 
 void buildTimezoneSelect(
   const char* name,
-  const char* currentPosix,
+  const char* currentIana,
   char* buf,
   int bufSize
 );
+
+const char* ianaToPosix(const char* iana);
 
 #endif

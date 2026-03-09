@@ -9,6 +9,8 @@ extern const char* WIFI_HOTSPOT_PASSWORD;
 
 // Exposed config getters
 String getTimezone();
+String getTimezoneIana();
+bool isIanaFormat(const char* tz);
 String getNTPServer();
 
 // Lifecycle

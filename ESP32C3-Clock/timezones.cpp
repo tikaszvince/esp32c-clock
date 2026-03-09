@@ -190,7 +190,7 @@ static void appendOption(char* buf, int bufSize, int& pos, const char* value, co
 
 void buildTimezoneSelect(
   const char* name,
-  const char* currentPosix,
+  const char* currentIana,
   char* buf,
   int bufSize
 ) {
@@ -209,10 +209,27 @@ void buildTimezoneSelect(
       if (posix == nullptr) {
         continue;
       }
-      bool sel = strcmp(posix, currentPosix) == 0;
-      appendOption(buf, bufSize, pos, posix, group.zones[i].city, sel);
+      bool sel = strcmp(iana, currentIana) == 0;
+      appendOption(buf, bufSize, pos, iana, group.zones[i].city, sel);
     }
     pos += snprintf(buf + pos, bufSize - pos, "</optgroup>");
   }
   pos += snprintf(buf + pos, bufSize - pos, "</select>");
+}
+
+const char* ianaToPosix(const char* iana) {
+  if (iana == nullptr || strlen(iana) == 0) {
+    Serial.println("Warning: Empty IANA timezone, using UTC");
+    return "UTC0";
+  }
+
+  const char* posix = TzDbLookup::getPosix(iana);
+  if (posix == nullptr) {
+    Serial.print("Warning: Unknown IANA timezone '");
+    Serial.print(iana);
+    Serial.println("', using UTC");
+    return "UTC0";
+  }
+
+  return posix;
 }

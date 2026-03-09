@@ -4,7 +4,7 @@
 #include "timezones.h"
 
 static String ntp_server = "pool.ntp.org";
-static String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";
+static String timezone = "Europe/Budapest";
 
 static char timezoneSelectBuf[TIMEZONE_SELECT_BUFFER_SIZE];
 
@@ -22,9 +22,45 @@ static void saveConfigCallback() {
   shouldSaveConfig = true;
 }
 
+bool isIanaFormat(const char* tz) {
+  if (tz == nullptr || strlen(tz) == 0) {
+    return false;
+  }
+  
+  // Rule out POSIX formats by checking what they contain:
+  
+  // 1. POSIX DST rules use commas (e.g., "CET-1CEST,M3.5.0,M10.5.0/3")
+  //    IANA timezones never use commas
+  if (strchr(tz, ',') != nullptr) {
+    return false;  // Has comma → POSIX
+  }
+  
+  // 2. POSIX uses offset notation: + or - followed by a digit
+  //    (e.g., "CET-1CEST", "UTC+5", "GMT-3")
+  //    IANA never has this pattern
+  for (int i = 0; tz[i] != '\0'; i++) {
+    if ((tz[i] == '+' || tz[i] == '-') && tz[i + 1] != '\0' && isdigit(tz[i + 1])) {
+      return false;  // Has offset → POSIX
+    }
+  }
+  
+  // 3. IANA must contain at least one '/' (e.g., "Europe/Budapest")
+  //    Simple POSIX like "UTC0", "GMT0", "PST8PDT" don't have slashes
+  if (strchr(tz, '/') == nullptr) {
+    return false;  // No slash → POSIX
+  }
+  
+  // Passed all POSIX exclusion checks → treat as IANA
+  return true;
+}
+
 bool loadConfig() {
   preferences.begin("clock-config", true);
-  String saved_tz = preferences.getString("timezone", "CET-1CEST,M3.5.0,M10.5.0/3");
+  
+  // Changed: use "timezone_iana" key for new format
+  // Keep "timezone" key for backward compatibility
+  String saved_tz_iana = preferences.getString("timezone_iana", "");
+  String saved_tz_legacy = preferences.getString("timezone", "");
   String saved_ntp = preferences.getString("ntp_server", "pool.ntp.org");
   bool wifiConfigured = preferences.getBool("wifi_configured", false);
   bool saved_powersafe = preferences.getBool("powersafe", true);
@@ -32,14 +68,30 @@ bool loadConfig() {
 
   preferences.end();
 
-  strcpy(timezone_buffer, saved_tz.c_str());
-  strcpy(ntp_server_buffer, saved_ntp.c_str());
+  // Migration logic: prefer IANA, fall back to legacy POSIX
+  if (saved_tz_iana.length() > 0) {
+    // Modern IANA format
+    strcpy(timezone_buffer, saved_tz_iana.c_str());
+    timezone = saved_tz_iana;
+    Serial.println("Loaded IANA timezone: " + timezone);
+  }
+  else if (saved_tz_legacy.length() > 0) {
+    // Legacy POSIX format - keep it but log migration needed
+    strcpy(timezone_buffer, saved_tz_legacy.c_str());
+    timezone = saved_tz_legacy;
+    Serial.println("Loaded legacy POSIX timezone: " + timezone);
+    Serial.println("Will migrate to IANA on next config save");
+  }
+  else {
+    // No stored timezone, use default
+    strcpy(timezone_buffer, "Europe/Budapest");
+    timezone = "Europe/Budapest";
+    Serial.println("Using default IANA timezone: " + timezone);
+  }
 
-  timezone = saved_tz;
+  strcpy(ntp_server_buffer, saved_ntp.c_str());
   ntp_server = saved_ntp;
 
-  Serial.print("Loaded timezone: ");
-  Serial.println(timezone_buffer);
   Serial.print("Loaded NTP server: ");
   Serial.println(ntp_server_buffer);
   Serial.print("WiFi previously configured: ");
@@ -95,14 +147,25 @@ bool connectWifi() {
 
     timezone = String(timezone_buffer);
     ntp_server = String(ntp_server_buffer);
+
+    // Validate the IANA timezone
+    if (!isIanaFormat(timezone_buffer)) {
+      Serial.println("Warning: Received non-IANA timezone format, using default");
+      strcpy(timezone_buffer, "Europe/Budapest");
+      timezone = "Europe/Budapest";
+    }
   }
 
   // Save everything including the wifi_configured flag
   preferences.begin("clock-config", false);
-  preferences.putString("timezone", timezone_buffer);
+  preferences.putString("timezone_iana", timezone_buffer);
   preferences.putString("ntp_server", ntp_server_buffer);
   preferences.putBool("wifi_configured", true);
   preferences.putBool("powersafe", powersafe_mode);
+  
+  // Clean up legacy key on save (migration)
+  preferences.remove("timezone");
+  
   preferences.end();
 
   Serial.println("\nWiFi connected!");
@@ -111,6 +174,8 @@ bool connectWifi() {
   Serial.print("Signal Strength: ");
   Serial.print(WiFi.RSSI());
   Serial.println(" dBm");
+  Serial.print("Saved IANA timezone: ");
+  Serial.println(timezone_buffer);
 
   setAppState(CONNECTED_NOT_SYNCED);
   return true;
@@ -130,9 +195,22 @@ void resetConfig() {
   ESP.restart();
 }
 
-String getTimezone()  {
+String getTimezone() {
+  // If stored value is IANA format, convert to POSIX
+  if (isIanaFormat(timezone.c_str())) {
+    const char* posix = ianaToPosix(timezone.c_str());
+    return String(posix);
+  }
+  
+  // Legacy POSIX format - return as-is (migration fallback)
+  Serial.println("Warning: Using legacy POSIX timezone string");
   return timezone;
 }
+
+String getTimezoneIana() {
+  return timezone;
+}
+
 String getNTPServer() {
   return ntp_server;
 }
