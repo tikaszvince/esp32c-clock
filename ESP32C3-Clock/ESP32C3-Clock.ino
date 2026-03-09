@@ -38,6 +38,12 @@ void setup() {
 
   // Initialize TFT display.
   displaySetup();
+  takeDisplayMutex();
+  TFT_display.begin();
+  TFT_display.setRotation(0);
+  TFT_display.fillScreen(COLOR_BACKGROUND);
+  giveDisplayMutex();
+
   #if !SCREENSHOT_MODE
     startupScreenTaskStart();
 
@@ -52,12 +58,6 @@ void setup() {
       }
     );
   #endif
-
-  takeDisplayMutex();
-  TFT_display.begin();
-  TFT_display.setRotation(0);
-  TFT_display.fillScreen(COLOR_BACKGROUND);
-  giveDisplayMutex();
 
   #if SCREENSHOT_MODE
     Serial.println("=================");

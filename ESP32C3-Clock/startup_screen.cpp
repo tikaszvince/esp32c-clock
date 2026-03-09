@@ -52,10 +52,11 @@ static void startupScreenTask(void* parameter) {
     AppState state = getAppState();
 
     if (
-      isInited()
+      state == NOT_CONFIGURED
       || state == DISCONNECTED
       || state == CONNECTED_NOT_SYNCED
       || state == CONNECTED_SYNCED
+      || isInited()
     ) {
       Serial.println("Startup screen should terminate");
       break;
