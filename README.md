@@ -101,7 +101,7 @@ On first boot the device starts a WiFi access point named `ESP32-Clock` with pas
 The portal allows you to configure:
 
 - **WiFi network** — SSID and password of your home network
-- **Timezone** — select from a structured dropdown organized by continent. The selected value is stored as a POSIX timezone string and applied to NTP time synchronization
+- **Timezone** — select from a structured dropdown organized by continent. The selected value is stored as a IANA timezone string and applied to NTP time synchronization
 - **NTP server** — defaults to `pool.ntp.org`. Can be changed to any NTP server hostname
 
 Configuration is saved to non-volatile storage and survives power cycles. The portal reopens automatically if the saved WiFi network becomes unreachable for an extended period.
