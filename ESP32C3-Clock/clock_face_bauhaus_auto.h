@@ -24,6 +24,11 @@ private:
   ClockFace* _active;
 
   ClockFace* selectFace(int hour);
+
+  #if ENCODER_ENABLED
+    unsigned long _previewSwitchMs;
+    bool _previewShowLight;
+  #endif
 };
 
 #endif
