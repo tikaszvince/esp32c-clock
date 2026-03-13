@@ -44,7 +44,8 @@ bool getDisplayTime(struct tm* timeinfo) {
     TFT_display.beginCapture(stripY0);
     if (activeFace != NULL && getDisplayTime(&timeinfo)) {
       activeFace->reset();
-      activeFace->draw(CONNECTED_SYNCED, false, timeinfo);
+      DrawContext ctx = { CONNECTED_SYNCED, false, timeinfo, false };
+      activeFace->draw(ctx);
     }
     TFT_display.endCapture();
     memcpy(outBuffer, TFT_display.stripBuffer(), SCREEN_WIDTH * CAPTURE_STRIP_HEIGHT * sizeof(uint16_t));
@@ -136,12 +137,17 @@ void redrawDisplay() {
 
   lastState = state;
   if (getDisplayTime(&timeinfo)) {
-    activeFace->draw(state, blinkState, timeinfo);
     #if ENCODER_ENABLED
-      if (
-        faceManagerIsGracePeriodActive()
-        && !activeFace->handlesGracePeriodOverlay()
-      ) {
+      bool gracePeriodActive = faceManagerIsGracePeriodActive();
+    #else
+      bool gracePeriodActive = false;
+    #endif
+
+    DrawContext ctx = { state, blinkState, timeinfo, gracePeriodActive };
+    activeFace->draw(ctx);
+
+    #if ENCODER_ENABLED
+      if (gracePeriodActive && !activeFace->handlesGracePeriodOverlay()) {
         drawGracePeriodOverlay(faceManagerGetGracePeriodFraction());
       }
     #endif

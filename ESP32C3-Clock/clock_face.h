@@ -4,13 +4,16 @@
 #include <time.h>
 #include "app_state.h"
 
+struct DrawContext {
+  AppState state;
+  bool blinkState;
+  tm timeinfo;
+  bool gracePeriodActive;
+};
+
 class ClockFace {
 public:
-  virtual void draw(
-    AppState state,
-    bool blinkState,
-    tm timeinfo
-  ) = 0;
+  virtual void draw(const DrawContext& ctx) = 0;
   virtual void reset() = 0;
 
   virtual const char* getId() const = 0;

@@ -9,11 +9,7 @@
 
 class ClockFaceClassic : public ClockFace {
 public:
-  void draw(
-    AppState state,
-    bool blinkState,
-    tm timeinfo
-  ) override;
+  void draw(const DrawContext& ctx) override;
   void reset() override;
 
 private:

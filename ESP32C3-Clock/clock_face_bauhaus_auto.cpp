@@ -31,10 +31,11 @@ ClockFace* ClockFaceBauhausAuto::selectFace(int hour) {
 }
 
 void ClockFaceBauhausAuto::draw(
-  AppState state,
-  bool blinkState,
-  tm timeinfo
+  const DrawContext& ctx
 ) {
+  AppState state = ctx.state;
+  bool blinkState = ctx.blinkState;
+  tm timeinfo = ctx.timeinfo;
   ClockFace* next;
   next = selectFace(timeinfo.tm_hour);
 
@@ -43,7 +44,7 @@ void ClockFaceBauhausAuto::draw(
     _active->reset();
   }
 
-  _active->draw(state, blinkState, timeinfo);
+  _active->draw(ctx);
 }
 
 void ClockFaceBauhausAuto::reset() {

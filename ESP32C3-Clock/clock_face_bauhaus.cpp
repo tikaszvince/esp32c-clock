@@ -108,10 +108,11 @@ void ClockFaceBauhaus::reset() {
 }
 
 void ClockFaceBauhaus::draw(
-  AppState state,
-  bool blinkState,
-  tm timeinfo
+  const DrawContext& ctx
 ) {
+  AppState state = ctx.state;
+  bool blinkState = ctx.blinkState;
+  tm timeinfo = ctx.timeinfo;
   if (_needsFullRedraw) {
     drawBackground();
     drawFaceRing();
