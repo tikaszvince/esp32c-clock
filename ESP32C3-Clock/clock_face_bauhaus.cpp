@@ -58,6 +58,8 @@ ClockFaceBauhaus::ClockFaceBauhaus(const BauhausTheme& theme)
 
 ClockFaceBauhaus ClockFaceBauhaus::createLight() {
   BauhausTheme t;
+  t.id = "bauhaus_light";
+  t.name = "Bauhaus Light";
   t.background = DIYables_TFT::colorRGB(255, 255, 255);
   t.face = DIYables_TFT::colorRGB(0, 0, 0);
   t.handHour = DIYables_TFT::colorRGB(0, 0, 0);
@@ -73,6 +75,8 @@ ClockFaceBauhaus ClockFaceBauhaus::createLight() {
 
 ClockFaceBauhaus ClockFaceBauhaus::createDark() {
   BauhausTheme t;
+  t.id = "bauhaus_dark";
+  t.name = "Bauhaus Dark";
   t.background = DIYables_TFT::colorRGB(0, 0, 0);
   t.face = DIYables_TFT::colorRGB(200, 200, 200);
   t.handHour = DIYables_TFT::colorRGB(200, 200, 200);
@@ -85,6 +89,19 @@ ClockFaceBauhaus ClockFaceBauhaus::createDark() {
   t.statusSyncing = DIYables_TFT::colorRGB(50, 120, 240);
   return ClockFaceBauhaus(t);
 }
+
+const char* ClockFaceBauhaus::getId() const {
+  return _theme.id;
+}
+const char* ClockFaceBauhaus::getName() const {
+  return _theme.name;
+}
+
+#if ENCODER_ENABLED
+  bool ClockFaceBauhaus::handlesGracePeriodOverlay() const {
+    return false;
+  }
+#endif
 
 void ClockFaceBauhaus::reset() {
   _needsFullRedraw = true;

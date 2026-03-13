@@ -29,6 +29,19 @@ static const uint8_t ICON_WIFI_Y = 34;
 static const uint8_t ICON_NTP_X = SCREEN_WIDTH - ICON_WIFI_X - ICON_SIZE;
 static const uint8_t ICON_NTP_Y = ICON_WIFI_Y;
 
+const char* ClockFaceClassic::getId() const {
+  return "classic";
+}
+
+const char* ClockFaceClassic::getName() const {
+  return "Classic";
+}
+#if ENCODER_ENABLED
+  bool ClockFaceClassic::handlesGracePeriodOverlay() const {
+    return false;
+  }
+#endif
+
 void ClockFaceClassic::reset() {
   _needsFullRedraw = true;
 }

@@ -2,12 +2,16 @@
 #include "Arduino.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include <math.h>
 #include "display.h"
 #include "app_state.h"
 #include "display_constants.h"
 #include "timing_constants.h"
 #include "pins.h"
 #include "config.h"
+#if ENCODER_ENABLED
+  #include "face_manager.h"
+#endif
 
 #if SCREENSHOT_MODE
   CapturableTFT TFT_display(PIN_RST, PIN_DC, PIN_CS);
@@ -68,6 +72,32 @@ void setClockFace(ClockFace* face) {
   activeFace = face;
 }
 
+#if ENCODER_ENABLED
+  static void drawGracePeriodOverlay(float fraction) {
+    // Thin arc at the outer edge, draining clockwise from the top.
+    static const int ARC_RADIUS = 117;
+    static const float ARC_STEP_DEG = 0.5f;
+    static const uint16_t ARC_COLOR = DIYables_TFT::colorRGB(0, 220, 255);
+
+    float filledDeg = fraction * 360.0f;
+    for (float angle = 0.0f; angle < 360.0f; angle += ARC_STEP_DEG) {
+      float rad = (angle - 90.0f) * PI / 180.0f;
+      int x = CENTER_X + (int)roundf(ARC_RADIUS * cosf(rad));
+      int y = CENTER_Y + (int)roundf(ARC_RADIUS * sinf(rad));
+      uint16_t color = (angle < filledDeg) ? ARC_COLOR : COLOR_BACKGROUND;
+      TFT_display.drawPixel(x, y, color);
+    }
+
+    // "Click to save" text centered near the bottom.
+    static const char* label = "Click to save";
+    TFT_display.setTextSize(1);
+    TFT_display.setTextColor(ARC_COLOR, COLOR_BACKGROUND);
+    int textX = (SCREEN_WIDTH - strlen(label) * 6) / 2;
+    TFT_display.setCursor(textX, SCREEN_HEIGHT - 20);
+    TFT_display.print(label);
+  }
+#endif
+
 void redrawDisplay() {
   if (activeFace == NULL) {
     return;
@@ -107,6 +137,14 @@ void redrawDisplay() {
   lastState = state;
   if (getDisplayTime(&timeinfo)) {
     activeFace->draw(state, blinkState, timeinfo);
+    #if ENCODER_ENABLED
+      if (
+        faceManagerIsGracePeriodActive()
+        && !activeFace->handlesGracePeriodOverlay()
+      ) {
+        drawGracePeriodOverlay(faceManagerGetGracePeriodFraction());
+      }
+    #endif
   }
 }
 

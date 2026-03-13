@@ -10,6 +10,7 @@
 #include "clock_face_factory.h"
 #include "display_task.h"
 #include "timing_constants.h"
+#include "face_manager.h"
 
 #if SCREENSHOT_MODE
   #include "screenshot_server.h"
@@ -55,7 +56,19 @@ void setup() {
         if (state == CONNECTED_SYNCED || state == CONNECTED_NOT_SYNCED || state == SYNCED_WIFI_OFF) {
           requestNtpSync();
         }
-      }
+      },
+      #if ENCODER_ENABLED
+        []() {
+          Serial.println("On single clock");
+          faceManagerOnSingleClick();
+        },
+        [](int delta) {
+          faceManagerOnRotation(delta);
+        }
+      #else
+        nullptr,
+        nullptr
+      #endif
     );
   #endif
 
@@ -104,8 +117,7 @@ void setup() {
   #if SCREENSHOT_MODE
     setClockFace(getInstance(SCREENSHOT_FACE));
   #else
-    // TODO: load last used clockface.
-    setClockFace(getInstance(CLOCK_FACE_ORBIT));
+    setConfiguredClockFace();
   #endif
 
   setInited();
@@ -128,5 +140,8 @@ void loop() {
     }
 
     buttonLoop();
+    #if ENCODER_ENABLED
+      faceManagerUpdate();
+    #endif
   #endif
 }

@@ -5,6 +5,19 @@
 static constexpr int BAUHAUS_LIGHT_HOUR_START = 7;
 static constexpr int BAUHAUS_DARK_HOUR_START  = 19;
 
+const char* ClockFaceBauhausAuto::getId() const {
+  return "bauhaus_auto";
+}
+
+const char* ClockFaceBauhausAuto::getName() const {
+  return "Bauhaus (auto light/dark)";
+}
+#if ENCODER_ENABLED
+  bool ClockFaceBauhausAuto::handlesGracePeriodOverlay() const {
+    return false;
+  }
+#endif
+
 ClockFaceBauhausAuto::ClockFaceBauhausAuto()
   : _light(ClockFaceBauhaus::createLight()),
     _dark(ClockFaceBauhaus::createDark()),

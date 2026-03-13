@@ -12,5 +12,10 @@ enum ClockFaceType {
 };
 
 ClockFace* getInstance(ClockFaceType type);
+ClockFace* getFaceAt(int index);
+ClockFaceType getTypeAt(int index);
+int getFaceCount();
+ClockFace* getFaceById(const char* id);
+int getIndexById(const char* id);
 
 #endif

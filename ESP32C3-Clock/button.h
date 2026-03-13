@@ -5,7 +5,9 @@
 
 void buttonSetup(
   void (*onResetConfirm)(),
-  void (*onDoubleClick)()
+  void (*onDoubleClick)(),
+  void (*onSingleClick)(),
+  void (*onRotation)(int delta)
 );
 void buttonLoop();
 

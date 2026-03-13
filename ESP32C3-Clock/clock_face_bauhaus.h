@@ -8,6 +8,8 @@
 #include "app_state.h"
 
 struct BauhausTheme {
+  const char* id;
+  const char* name;
   uint16_t background;
   uint16_t face;
   uint16_t handHour;
@@ -31,6 +33,12 @@ public:
     tm  timeinfo
   ) override;
   void reset() override;
+
+  const char* getId() const override;
+  const char* getName() const override;
+  #if ENCODER_ENABLED
+    bool handlesGracePeriodOverlay() const override;
+  #endif
 
 private:
   explicit ClockFaceBauhaus(const BauhausTheme& theme);

@@ -14,6 +14,12 @@ public:
   ) override;
   void reset() override;
 
+  const char* getId() const override;
+  const char* getName() const override;
+  #if ENCODER_ENABLED
+    bool handlesGracePeriodOverlay() const override;
+  #endif
+
 private:
   bool _needsFullRedraw = true;
   int _lastMinute = -2;

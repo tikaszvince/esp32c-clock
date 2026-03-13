@@ -12,6 +12,7 @@ String getTimezone();
 String getTimezoneIana();
 bool isIanaFormat(const char* tz);
 String getNTPServer();
+String getDefaultFaceId();
 
 // Lifecycle
 // Returns true if WiFi was previously configured.
@@ -24,5 +25,6 @@ void resetConfig();
 // Returns true if WiFi reconnected successfully.
 bool reconnectWifi();
 bool getPowersafeMode();
+void saveDefaultFaceId(const char* id);
 
 #endif

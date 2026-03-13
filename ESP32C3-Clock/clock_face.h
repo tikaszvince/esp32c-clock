@@ -12,6 +12,14 @@ public:
     tm timeinfo
   ) = 0;
   virtual void reset() = 0;
+
+  virtual const char* getId() const = 0;
+  virtual const char* getName() const = 0;
+
+  #if ENCODER_ENABLED
+    virtual bool handlesGracePeriodOverlay() const = 0;
+  #endif
+
   virtual ~ClockFace() {}
 };
 

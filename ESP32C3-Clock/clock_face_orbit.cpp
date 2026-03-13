@@ -57,6 +57,19 @@ static const int ICON_NTP_X = (SCREEN_WIDTH / 2) - (ICON_SIZE / 2);
 // Center top with padding from top
 static const int ICON_NTP_Y = ICON_PADDING;
 
+const char* ClockFaceOrbit::getId() const {
+  return "orbit";
+}
+
+const char* ClockFaceOrbit::getName() const {
+  return "Orbit";
+}
+#if ENCODER_ENABLED
+  bool ClockFaceOrbit::handlesGracePeriodOverlay() const {
+    return false;
+  }
+#endif
+
 void ClockFaceOrbit::reset() {
   _needsFullRedraw = true;
 }

@@ -2,11 +2,18 @@
 #include "config.h"
 #include "app_state.h"
 #include "timezones.h"
+#if ENCODER_ENABLED
+  #include "clock_face_factory.h"
+#endif
 
 static String ntp_server = "pool.ntp.org";
 static String timezone = "Europe/Budapest";
 
 static char timezoneSelectBuf[TIMEZONE_SELECT_BUFFER_SIZE];
+static char powersafeSelectBuf[256];
+#if ENCODER_ENABLED
+  static char faceSelectBuf[512];
+#endif
 
 const char* WIFI_HOTSPOT_SSID = "ESP32-Clock";
 const char* WIFI_HOTSPOT_PASSWORD = "clocksetup";
@@ -16,6 +23,7 @@ static char timezone_buffer[100];
 static char ntp_server_buffer[50];
 static bool shouldSaveConfig = false;
 static bool powersafe_mode = true;
+static String default_face_id = "orbit";
 
 static void saveConfigCallback() {
   Serial.println("Should save config");
@@ -26,15 +34,15 @@ bool isIanaFormat(const char* tz) {
   if (tz == nullptr || strlen(tz) == 0) {
     return false;
   }
-  
+
   // Rule out POSIX formats by checking what they contain:
-  
+
   // 1. POSIX DST rules use commas (e.g., "CET-1CEST,M3.5.0,M10.5.0/3")
   //    IANA timezones never use commas
   if (strchr(tz, ',') != nullptr) {
     return false;  // Has comma → POSIX
   }
-  
+
   // 2. POSIX uses offset notation: + or - followed by a digit
   //    (e.g., "CET-1CEST", "UTC+5", "GMT-3")
   //    IANA never has this pattern
@@ -43,20 +51,20 @@ bool isIanaFormat(const char* tz) {
       return false;  // Has offset → POSIX
     }
   }
-  
+
   // 3. IANA must contain at least one '/' (e.g., "Europe/Budapest")
   //    Simple POSIX like "UTC0", "GMT0", "PST8PDT" don't have slashes
   if (strchr(tz, '/') == nullptr) {
     return false;  // No slash → POSIX
   }
-  
+
   // Passed all POSIX exclusion checks → treat as IANA
   return true;
 }
 
 bool loadConfig() {
   preferences.begin("clock-config", true);
-  
+
   // Changed: use "timezone_iana" key for new format
   // Keep "timezone" key for backward compatibility
   String saved_tz_iana = preferences.getString("timezone_iana", "");
@@ -65,6 +73,10 @@ bool loadConfig() {
   bool wifiConfigured = preferences.getBool("wifi_configured", false);
   bool saved_powersafe = preferences.getBool("powersafe", true);
   powersafe_mode = saved_powersafe;
+  String saved_face_id = preferences.getString("default_face", "orbit");
+  default_face_id = saved_face_id;
+  Serial.print("Loaded default face: ");
+  Serial.println(default_face_id);
 
   preferences.end();
 
@@ -100,6 +112,41 @@ bool loadConfig() {
   return wifiConfigured;
 }
 
+static void buildPowersafeSelect(bool currentValue, char* buf, int bufSize) {
+  snprintf(
+    buf,
+    bufSize,
+    "<label for='powersafe'>Power safe mode. Disable networking when not needed</label>"
+    "<select name='powersafe'>"
+    "<option value='1'%s>Enabled</option>"
+    "<option value='0'%s>Disabled</option>"
+    "</select>",
+    currentValue ? " selected" : "",
+    currentValue ? "" : " selected"
+  );
+}
+
+#if ENCODER_ENABLED
+  static void buildFaceSelect(const char* currentId, char* buf, int bufSize) {
+    int pos = 0;
+    pos += snprintf(buf + pos, bufSize - pos,
+      "<label for='default_face'>Default clock face</label>"
+      "<select name='default_face'>"
+    );
+    for (int i = 0; i < getFaceCount(); i++) {
+      ClockFace* face = getFaceAt(i);
+      bool selected = strcmp(face->getId(), currentId) == 0;
+      pos += snprintf(buf + pos, bufSize - pos,
+        "<option value='%s'%s>%s</option>",
+        face->getId(),
+        selected ? " selected" : "",
+        face->getName()
+      );
+    }
+    snprintf(buf + pos, bufSize - pos, "</select>");
+  }
+#endif
+
 bool connectWifi() {
   setAppState(CONNECTING);
 
@@ -115,20 +162,15 @@ bool connectWifi() {
   wm.setSaveParamsCallback(saveConfigCallback);
   wm.setConfigPortalTimeout(180);
 
-  char powersafeHtml[256];
-  snprintf(
-    powersafeHtml,
-    sizeof(powersafeHtml),
-    "<label for='powersafe'>Power safe mode. Disable networking when not needed</label>"
-    "<select name='powersafe'>"
-    "<option value='1'%s>Enabled</option>"
-    "<option value='0'%s>Disabled</option>"
-    "</select>",
-    powersafe_mode ? " selected" : "",
-    powersafe_mode ? "" : " selected"
-  );
-  WiFiManagerParameter custom_powersafe(powersafeHtml);
+  buildPowersafeSelect(powersafe_mode, powersafeSelectBuf, sizeof(powersafeSelectBuf));
+  WiFiManagerParameter custom_powersafe(powersafeSelectBuf);
   wm.addParameter(&custom_powersafe);
+
+  #if ENCODER_ENABLED
+    buildFaceSelect(default_face_id.c_str(), faceSelectBuf, sizeof(faceSelectBuf));
+    WiFiManagerParameter custom_face_select(faceSelectBuf);
+    wm.addParameter(&custom_face_select);
+  #endif
 
   Serial.println("Calling autoConnect...");
   bool connected = wm.autoConnect(WIFI_HOTSPOT_SSID, WIFI_HOTSPOT_PASSWORD);
@@ -144,6 +186,13 @@ bool connectWifi() {
     strcpy(timezone_buffer, custom_timezone_select.getValue());
     strcpy(ntp_server_buffer, custom_ntp_server.getValue());
     powersafe_mode = strcmp(custom_powersafe.getValue(), "1") == 0;
+
+    #if ENCODER_ENABLED
+      const char* newFaceId = custom_face_select.getValue();
+      if (newFaceId != nullptr && strlen(newFaceId) > 0) {
+        default_face_id = String(newFaceId);
+      }
+    #endif
 
     timezone = String(timezone_buffer);
     ntp_server = String(ntp_server_buffer);
@@ -162,10 +211,11 @@ bool connectWifi() {
   preferences.putString("ntp_server", ntp_server_buffer);
   preferences.putBool("wifi_configured", true);
   preferences.putBool("powersafe", powersafe_mode);
-  
+  preferences.putString("default_face", default_face_id.c_str());
+
   // Clean up legacy key on save (migration)
   preferences.remove("timezone");
-  
+
   preferences.end();
 
   Serial.println("\nWiFi connected!");
@@ -201,7 +251,7 @@ String getTimezone() {
     const char* posix = ianaToPosix(timezone.c_str());
     return String(posix);
   }
-  
+
   // Legacy POSIX format - return as-is (migration fallback)
   Serial.println("Warning: Using legacy POSIX timezone string");
   return timezone;
@@ -243,4 +293,20 @@ bool reconnectWifi() {
 
   Serial.println("\nReconnect failed, falling back to full connect...");
   return connectWifi();
+}
+
+String getDefaultFaceId() {
+  return default_face_id;
+}
+
+void saveDefaultFaceId(const char* id) {
+  if (id == nullptr || strlen(id) == 0) {
+    return;
+  }
+  default_face_id = String(id);
+  preferences.begin("clock-config", false);
+  preferences.putString("default_face", id);
+  preferences.end();
+  Serial.print("Default face saved: ");
+  Serial.println(id);
 }

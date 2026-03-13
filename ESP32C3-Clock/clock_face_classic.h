@@ -36,6 +36,12 @@ private:
   void drawTextBoxContent(AppState state, tm timeinfo);
   void drawIcons(AppState state, bool blinkState);
   void drawHands(tm timeinfo);
+
+  const char* getId() const override;
+  const char* getName() const override;
+  #if ENCODER_ENABLED
+    bool handlesGracePeriodOverlay() const override;
+  #endif
 };
 
 #endif
