@@ -64,7 +64,7 @@ const char* ClockFaceOrbit::getId() const {
 const char* ClockFaceOrbit::getName() const {
   return "Orbit";
 }
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   bool ClockFaceOrbit::handlesGracePeriodOverlay() const {
     return false;
   }

@@ -5,7 +5,7 @@
 
 void setConfiguredClockFace();
 
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   void faceManagerSetup(ClockFaceType defaultType);
   void faceManagerOnRotation(int delta);
   void faceManagerOnSingleClick();

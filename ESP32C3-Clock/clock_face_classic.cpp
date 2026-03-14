@@ -36,7 +36,7 @@ const char* ClockFaceClassic::getId() const {
 const char* ClockFaceClassic::getName() const {
   return "Classic";
 }
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   bool ClockFaceClassic::handlesGracePeriodOverlay() const {
     return false;
   }

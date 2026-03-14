@@ -6,7 +6,7 @@
 #include "timing_constants.h"
 
 static OneButton buttonBoot(BOOT_BUTTON_PIN, true);
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   static OneButton buttonEncoder(PIN_ENCODER_SW, true);
 #endif
 
@@ -15,7 +15,7 @@ static unsigned long resetPendingStart = 0;
 static void (*_onResetConfirm)() = nullptr;
 static void (*_onDoubleClick)() = nullptr;
 static void (*_onSingleClick)() = nullptr;
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   static void (*_onRotation)(int delta) = nullptr;
 #endif
 
@@ -42,7 +42,7 @@ static void handleLongPressStop() {
   Serial.println("Reset pending — waiting for confirmation...");
 }
 
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   static void handleSingleClick() {
     Serial.println("Encoder button single click.");
     if (_onSingleClick) {
@@ -60,7 +60,7 @@ void buttonSetup(
   _onResetConfirm = onResetConfirm;
   _onDoubleClick = onDoubleClick;
   _onSingleClick = onSingleClick;
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     pinMode(PIN_ENCODER_CLK, INPUT);
     pinMode(PIN_ENCODER_DT, INPUT);
     _onRotation = onRotation;
@@ -73,7 +73,7 @@ void buttonSetup(
   buttonBoot.attachDoubleClick(handleDoubleClick);
   buttonBoot.attachLongPressStop(handleLongPressStop);
 
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     buttonEncoder.setDebounceMs(BUTTON_DEBOUNCE_MS);
     buttonEncoder.setClickMs(BUTTON_CLICK_MS);
     buttonEncoder.setPressMs(BUTTON_PRESS_TICK_MS);
@@ -87,7 +87,7 @@ void buttonSetup(
 void buttonLoop() {
   buttonBoot.tick();
 
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     buttonEncoder.tick();
 
     // Rotation polling.

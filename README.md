@@ -86,7 +86,7 @@ additional pull-ups are needed.
 The rotary encoder feature is included by default. To build without it, set the
 following flag in `platformio.ini`:
 ```ini
--DENCODER_ENABLED=0
+-DDISABLE_ENCODER=1
 ```
 
 ### Screenshot mode
@@ -159,7 +159,7 @@ on the ESP32 development board (fallback). Both buttons support the same
 interactions. The BOOT button is useful when the encoder is not wired or not
 accessible, for example inside a housing.
 
-If the encoder feature is disabled via `ENCODER_ENABLED=0`, only the BOOT button
+If the encoder feature is disabled via `DISABLE_ENCODER=1`, only the BOOT button
 is active.
 
 ### Force a time sync

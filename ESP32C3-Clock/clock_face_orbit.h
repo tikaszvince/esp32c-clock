@@ -12,7 +12,7 @@ public:
 
   const char* getId() const override;
   const char* getName() const override;
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     bool handlesGracePeriodOverlay() const override;
   #endif
 

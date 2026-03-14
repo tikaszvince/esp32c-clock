@@ -19,7 +19,7 @@ public:
   virtual const char* getId() const = 0;
   virtual const char* getName() const = 0;
 
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     virtual bool handlesGracePeriodOverlay() const = 0;
   #endif
 

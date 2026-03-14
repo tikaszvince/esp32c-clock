@@ -8,7 +8,7 @@
 
 #define BOOT_BUTTON_PIN 0
 
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   // KY-040 Rotary Encoder Pin out
   // Power supply - VCC Required 3.3V
   // GND Required Ground

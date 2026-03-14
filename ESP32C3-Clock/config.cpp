@@ -2,7 +2,7 @@
 #include "config.h"
 #include "app_state.h"
 #include "timezones.h"
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   #include "clock_face_factory.h"
 #endif
 
@@ -11,7 +11,7 @@ static String timezone = "Europe/Budapest";
 
 static char timezoneSelectBuf[TIMEZONE_SELECT_BUFFER_SIZE];
 static char powersafeSelectBuf[256];
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   static char faceSelectBuf[512];
 #endif
 
@@ -126,7 +126,7 @@ static void buildPowersafeSelect(bool currentValue, char* buf, int bufSize) {
   );
 }
 
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   static void buildFaceSelect(const char* currentId, char* buf, int bufSize) {
     int pos = 0;
     pos += snprintf(buf + pos, bufSize - pos,
@@ -166,7 +166,7 @@ bool connectWifi() {
   WiFiManagerParameter custom_powersafe(powersafeSelectBuf);
   wm.addParameter(&custom_powersafe);
 
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     buildFaceSelect(default_face_id.c_str(), faceSelectBuf, sizeof(faceSelectBuf));
     WiFiManagerParameter custom_face_select(faceSelectBuf);
     wm.addParameter(&custom_face_select);
@@ -187,7 +187,7 @@ bool connectWifi() {
     strcpy(ntp_server_buffer, custom_ntp_server.getValue());
     powersafe_mode = strcmp(custom_powersafe.getValue(), "1") == 0;
 
-    #if ENCODER_ENABLED
+    #if !DISABLE_ENCODER
       const char* newFaceId = custom_face_select.getValue();
       if (newFaceId != nullptr && strlen(newFaceId) > 0) {
         default_face_id = String(newFaceId);

@@ -17,7 +17,7 @@ void setConfiguredClockFace() {
     index = 0;
   }
 
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     faceManagerSetup(getTypeAt(index));
   #else
     ClockFace* face = getFaceAt(index);
@@ -26,8 +26,7 @@ void setConfiguredClockFace() {
   #endif
 }
 
-#if ENCODER_ENABLED
-
+#if !DISABLE_ENCODER
   static int _defaultIndex = 0;
   static int _currentIndex = 0;
   static unsigned long _gracePeriodStart = 0;

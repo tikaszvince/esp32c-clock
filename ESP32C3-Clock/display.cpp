@@ -9,7 +9,7 @@
 #include "timing_constants.h"
 #include "pins.h"
 #include "config.h"
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   #include "face_manager.h"
 #endif
 
@@ -73,7 +73,7 @@ void setClockFace(ClockFace* face) {
   activeFace = face;
 }
 
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   static void drawGracePeriodOverlay(float fraction) {
     // Thin arc at the outer edge, draining clockwise from the top.
     static const int ARC_RADIUS = 117;
@@ -137,7 +137,7 @@ void redrawDisplay() {
 
   lastState = state;
   if (getDisplayTime(&timeinfo)) {
-    #if ENCODER_ENABLED
+    #if !DISABLE_ENCODER
       bool gracePeriodActive = faceManagerIsGracePeriodActive();
     #else
       bool gracePeriodActive = false;
@@ -146,7 +146,7 @@ void redrawDisplay() {
     DrawContext ctx = { state, blinkState, timeinfo, gracePeriodActive };
     activeFace->draw(ctx);
 
-    #if ENCODER_ENABLED
+    #if !DISABLE_ENCODER
       if (gracePeriodActive && !activeFace->handlesGracePeriodOverlay()) {
         drawGracePeriodOverlay(faceManagerGetGracePeriodFraction());
       }

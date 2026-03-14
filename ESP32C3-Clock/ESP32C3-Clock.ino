@@ -57,7 +57,7 @@ void setup() {
           requestNtpSync();
         }
       },
-      #if ENCODER_ENABLED
+      #if !DISABLE_ENCODER
         []() {
           Serial.println("On single clock");
           faceManagerOnSingleClick();
@@ -140,7 +140,7 @@ void loop() {
     }
 
     buttonLoop();
-    #if ENCODER_ENABLED
+    #if !DISABLE_ENCODER
       faceManagerUpdate();
     #endif
   #endif

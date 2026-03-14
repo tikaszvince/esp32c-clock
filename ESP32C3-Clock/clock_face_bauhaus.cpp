@@ -97,7 +97,7 @@ const char* ClockFaceBauhaus::getName() const {
   return _theme.name;
 }
 
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   bool ClockFaceBauhaus::handlesGracePeriodOverlay() const {
     return false;
   }

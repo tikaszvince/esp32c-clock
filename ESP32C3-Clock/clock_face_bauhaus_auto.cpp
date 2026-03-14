@@ -13,7 +13,7 @@ const char* ClockFaceBauhausAuto::getId() const {
 const char* ClockFaceBauhausAuto::getName() const {
   return "Bauhaus (auto light/dark)";
 }
-#if ENCODER_ENABLED
+#if !DISABLE_ENCODER
   bool ClockFaceBauhausAuto::handlesGracePeriodOverlay() const {
     return false;
   }
@@ -39,7 +39,7 @@ void ClockFaceBauhausAuto::draw(
   tm timeinfo = ctx.timeinfo;
   ClockFace* next;
 
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     if (ctx.gracePeriodActive) {
       unsigned long now = millis();
       if (_previewSwitchMs == 0 || (now - _previewSwitchMs) >= PREVIEW_SWITCH_INTERVAL_MS) {
@@ -65,7 +65,7 @@ void ClockFaceBauhausAuto::draw(
 }
 
 void ClockFaceBauhausAuto::reset() {
-  #if ENCODER_ENABLED
+  #if !DISABLE_ENCODER
     _previewSwitchMs = 0;
     _previewShowLight = true;
   #endif
